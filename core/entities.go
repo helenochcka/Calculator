@@ -1,6 +1,6 @@
 package core
 
-type DTO struct {
+type Instruction struct {
 	Type      string  `json:"type"`
 	Operation *string `json:"op"`
 	Result    string  `json:"var"`

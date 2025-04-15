@@ -1,8 +1,9 @@
 package core
 
 import (
+	"context"
 	"errors"
-	"strconv"
+	"sync"
 )
 
 type UseCase struct {
@@ -13,90 +14,64 @@ func NewUseCase(s Service) UseCase {
 	return UseCase{service: s}
 }
 
-func (uc *UseCase) Execute(dtos []DTO) ([]Item, error) {
+func (uc *UseCase) Execute(ctx *context.Context, instructions []Instruction) ([]Item, error) {
 
-	buff := make(map[string]int)
 	var items []Item
-	var printFuncs []DTO
+	var varsToPrint []string
 
-	dep := make(map[string][]string)
-	var waiters []DTO
+	var wg sync.WaitGroup
 
-	for _, dto := range dtos {
-		if dto.Type == "calc" {
-			if _, ok := buff[dto.Result]; ok {
+	for _, instruction := range instructions {
+		if instruction.Type == "calc" {
+			if uc.service.GetResult(instruction.Result) != nil {
 				return nil, errors.New("var already used")
 			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				result := uc.service.Algorithm(ctx, &instruction)
+				if result != nil {
+					uc.service.WriteResult(instruction.Result, *result)
+					if uc.service.GetDependentValues(instruction.Result) != nil {
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							uc.calcOfDependentVars(ctx, instruction.Result, &wg)
+						}()
 
-			left, err := strconv.Atoi(*dto.Left)
-			if err != nil {
-				if _, ok := buff[*dto.Left]; !ok {
-					//return nil, errors.New("unknown left op")
-
-					dep[*dto.Left] = append(dep[*dto.Left], dto.Result)
-					waiters = append(waiters, dto)
-					continue
+					}
 				}
+			}()
 
-				left = buff[*dto.Left]
-			}
-
-			right, err := strconv.Atoi(*dto.Right)
-			if err != nil {
-				if _, ok := buff[*dto.Right]; !ok {
-					//return nil, errors.New("unknown right op")
-
-					dep[*dto.Right] = append(dep[*dto.Right], dto.Result)
-					waiters = append(waiters, dto)
-					continue
-				}
-				right = buff[*dto.Right]
-			}
-
-			res, err := uc.service.Calculate(*dto.Operation, left, right)
-
-			if err != nil {
-				return nil, err
-			}
-
-			buff[dto.Result] = *res
-
-		} else if dto.Type == "print" {
-			printFuncs = append(printFuncs, dto)
+		} else if instruction.Type == "print" {
+			varsToPrint = append(varsToPrint, instruction.Result)
 		} else {
 			return nil, errors.New("unknown type")
 		}
 	}
 
-	for _, waiter := range waiters {
-		left, err := strconv.Atoi(*waiter.Left)
-		if err != nil {
-			if _, ok := buff[*waiter.Left]; !ok {
-				return nil, errors.New("unknown left op")
-			}
+	wg.Wait()
 
-			left = buff[*waiter.Left]
-		}
-
-		right, err := strconv.Atoi(*waiter.Right)
-		if err != nil {
-			if _, ok := buff[*waiter.Right]; !ok {
-				return nil, errors.New("unknown right op")
-			}
-			right = buff[*waiter.Right]
-		}
-
-		res, err := uc.service.Calculate(*waiter.Operation, left, right)
-
-		if err != nil {
-			return nil, err
-		}
-
-		buff[waiter.Result] = *res
+	for _, varToPrint := range varsToPrint {
+		items = append(items, Item{Var: varToPrint, Value: *uc.service.GetResult(varToPrint)})
 	}
 
-	for _, printFunc := range printFuncs {
-		items = append(items, Item{Var: printFunc.Result, Value: buff[printFunc.Result]})
-	}
 	return items, nil
+}
+
+func (uc *UseCase) calcOfDependentVars(ctx *context.Context, calcResult string, wg *sync.WaitGroup) {
+	for _, instruction := range *uc.service.GetDependentValues(calcResult) {
+		result := uc.service.Algorithm(ctx, &instruction)
+		if result != nil {
+			uc.service.WriteResult(instruction.Result, *result)
+			if uc.service.GetDependentValues(instruction.Result) != nil {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					uc.calcOfDependentVars(ctx, instruction.Result, wg)
+				}()
+			}
+		}
+	}
+	uc.service.DeleteKey(calcResult)
 }

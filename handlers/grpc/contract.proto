@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package grpc;
+
+service Calc {
+  rpc Calculate (Request) returns (Response);
+}
+
+message Request {
+  repeated  Instruction instructions = 1;
+}
+
+message Response {
+  repeated Item items = 1;
+}
+
+message Instruction {
+  string type = 1;
+  optional string op = 2;
+  string var = 3;
+  optional string left = 4;
+  optional string right = 5;
+}
+
+message Item {
+  string var = 1;
+  int64 value = 2;
+}

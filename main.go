@@ -2,60 +2,33 @@ package main
 
 import (
 	"Calculator/core"
-	"fmt"
+	//handlerGin "Calculator/handlers/gin"
+	grpcServer "Calculator/handlers/grpc"
+	"Calculator/stores/concurrent_map"
+
+	//"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
+	"net"
 )
 
 func main() {
-	service := core.NewService()
+	//cfg := config.LoadYamlConfig("config/config.yaml")
+
+	instructionStorage := concurrent_map.NewInstructionStorage()
+	resultStorage := concurrent_map.NewResultStorage()
+
+	client := core.ProduceClient()
+
+	service := core.NewService(instructionStorage, resultStorage, client)
 	useCase := core.NewUseCase(service)
 
-	op := "+"
-	left := "1"
-	right := "2"
-	//res := "x"
-	res2 := "y"
+	gRPCServer := grpc.NewServer()
+	grpcServer.Register(gRPCServer, useCase)
+	grpcListener, _ := net.Listen("tcp", ":8080")
+	gRPCServer.Serve(grpcListener)
 
-	dto1 := core.DTO{
-		Type:      "calc",
-		Operation: &op,
-		Result:    "x",
-		Left:      &res2,
-		Right:     &right,
-	}
-
-	dto2 := core.DTO{
-		Type:      "print",
-		Operation: nil,
-		Result:    "x",
-		Left:      nil,
-		Right:     nil,
-	}
-
-	//op3 := "+"
-	dto3 := core.DTO{
-		Type:      "calc",
-		Operation: &op,
-		Result:    "y",
-		Left:      &left,
-		Right:     &right,
-	}
-
-	dto4 := core.DTO{
-		Type:      "print",
-		Operation: nil,
-		Result:    "y",
-		Left:      nil,
-		Right:     nil,
-	}
-
-	dtos := []core.DTO{dto1, dto2, dto3, dto4}
-
-	items, err := useCase.Execute(dtos)
-
-	if err != nil {
-		fmt.Printf("Error %s", err)
-	} else {
-		println(items[0].Var, items[0].Value, items[1].Var, items[1].Value)
-	}
-
+	//ginHandler := handlerGin.NewHandlerGin(useCase)
+	//r := gin.Default()
+	//r.POST("/calculate", ginHandler.Calculate)
+	//_ = r.Run(":8080")
 }
