@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.30.2
-// source: calc.proto
+// source: executor.proto
 
-package grpc
+package executorpb
 
 import (
 	context "context"
@@ -19,103 +19,103 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Calc_Calculate_FullMethodName = "/grpc.Calc/Calculate"
+	Execute_Calculate_FullMethodName = "/executorpb.Execute/Calculate"
 )
 
-// CalcClient is the client API for Calc service.
+// ExecuteClient is the client API for Execute service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type CalcClient interface {
+type ExecuteClient interface {
 	Calculate(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
-type calcClient struct {
+type executeClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewCalcClient(cc grpc.ClientConnInterface) CalcClient {
-	return &calcClient{cc}
+func NewExecuteClient(cc grpc.ClientConnInterface) ExecuteClient {
+	return &executeClient{cc}
 }
 
-func (c *calcClient) Calculate(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+func (c *executeClient) Calculate(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Calc_Calculate_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Execute_Calculate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// CalcServer is the server API for Calc service.
-// All implementations must embed UnimplementedCalcServer
+// ExecuteServer is the server API for Execute service.
+// All implementations must embed UnimplementedExecuteServer
 // for forward compatibility.
-type CalcServer interface {
+type ExecuteServer interface {
 	Calculate(context.Context, *Request) (*Response, error)
-	mustEmbedUnimplementedCalcServer()
+	mustEmbedUnimplementedExecuteServer()
 }
 
-// UnimplementedCalcServer must be embedded to have
+// UnimplementedExecuteServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedCalcServer struct{}
+type UnimplementedExecuteServer struct{}
 
-func (UnimplementedCalcServer) Calculate(context.Context, *Request) (*Response, error) {
+func (UnimplementedExecuteServer) Calculate(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
 }
-func (UnimplementedCalcServer) mustEmbedUnimplementedCalcServer() {}
-func (UnimplementedCalcServer) testEmbeddedByValue()              {}
+func (UnimplementedExecuteServer) mustEmbedUnimplementedExecuteServer() {}
+func (UnimplementedExecuteServer) testEmbeddedByValue()                 {}
 
-// UnsafeCalcServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to CalcServer will
+// UnsafeExecuteServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ExecuteServer will
 // result in compilation errors.
-type UnsafeCalcServer interface {
-	mustEmbedUnimplementedCalcServer()
+type UnsafeExecuteServer interface {
+	mustEmbedUnimplementedExecuteServer()
 }
 
-func RegisterCalcServer(s grpc.ServiceRegistrar, srv CalcServer) {
-	// If the following call pancis, it indicates UnimplementedCalcServer was
+func RegisterExecuteServer(s grpc.ServiceRegistrar, srv ExecuteServer) {
+	// If the following call pancis, it indicates UnimplementedExecuteServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Calc_ServiceDesc, srv)
+	s.RegisterService(&Execute_ServiceDesc, srv)
 }
 
-func _Calc_Calculate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Execute_Calculate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CalcServer).Calculate(ctx, in)
+		return srv.(ExecuteServer).Calculate(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Calc_Calculate_FullMethodName,
+		FullMethod: Execute_Calculate_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalcServer).Calculate(ctx, req.(*Request))
+		return srv.(ExecuteServer).Calculate(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Calc_ServiceDesc is the grpc.ServiceDesc for Calc service.
+// Execute_ServiceDesc is the grpc.ServiceDesc for Execute service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Calc_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc.Calc",
-	HandlerType: (*CalcServer)(nil),
+var Execute_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "executorpb.Execute",
+	HandlerType: (*ExecuteServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Calculate",
-			Handler:    _Calc_Calculate_Handler,
+			Handler:    _Execute_Calculate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "calc.proto",
+	Metadata: "executor.proto",
 }

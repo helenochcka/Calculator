@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.30.2
-// source: calc.proto
+// source: executor.proto
 
-package grpc
+package executorpb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -30,7 +30,7 @@ type Request struct {
 
 func (x *Request) Reset() {
 	*x = Request{}
-	mi := &file_contract_proto_msgTypes[0]
+	mi := &file_executor_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +42,7 @@ func (x *Request) String() string {
 func (*Request) ProtoMessage() {}
 
 func (x *Request) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_proto_msgTypes[0]
+	mi := &file_executor_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +55,7 @@ func (x *Request) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Request.ProtoReflect.Descriptor instead.
 func (*Request) Descriptor() ([]byte, []int) {
-	return file_contract_proto_rawDescGZIP(), []int{0}
+	return file_executor_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Request) GetInstructions() []*Instruction {
@@ -74,7 +74,7 @@ type Response struct {
 
 func (x *Response) Reset() {
 	*x = Response{}
-	mi := &file_contract_proto_msgTypes[1]
+	mi := &file_executor_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -86,7 +86,7 @@ func (x *Response) String() string {
 func (*Response) ProtoMessage() {}
 
 func (x *Response) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_proto_msgTypes[1]
+	mi := &file_executor_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -99,7 +99,7 @@ func (x *Response) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Response.ProtoReflect.Descriptor instead.
 func (*Response) Descriptor() ([]byte, []int) {
-	return file_contract_proto_rawDescGZIP(), []int{1}
+	return file_executor_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Response) GetItems() []*Item {
@@ -122,7 +122,7 @@ type Instruction struct {
 
 func (x *Instruction) Reset() {
 	*x = Instruction{}
-	mi := &file_contract_proto_msgTypes[2]
+	mi := &file_executor_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -134,7 +134,7 @@ func (x *Instruction) String() string {
 func (*Instruction) ProtoMessage() {}
 
 func (x *Instruction) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_proto_msgTypes[2]
+	mi := &file_executor_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -147,7 +147,7 @@ func (x *Instruction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instruction.ProtoReflect.Descriptor instead.
 func (*Instruction) Descriptor() ([]byte, []int) {
-	return file_contract_proto_rawDescGZIP(), []int{2}
+	return file_executor_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Instruction) GetType() string {
@@ -195,7 +195,7 @@ type Item struct {
 
 func (x *Item) Reset() {
 	*x = Item{}
-	mi := &file_contract_proto_msgTypes[3]
+	mi := &file_executor_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +207,7 @@ func (x *Item) String() string {
 func (*Item) ProtoMessage() {}
 
 func (x *Item) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_proto_msgTypes[3]
+	mi := &file_executor_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +220,7 @@ func (x *Item) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Item.ProtoReflect.Descriptor instead.
 func (*Item) Descriptor() ([]byte, []int) {
-	return file_contract_proto_rawDescGZIP(), []int{3}
+	return file_executor_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Item) GetVar() string {
@@ -237,16 +237,16 @@ func (x *Item) GetValue() int64 {
 	return 0
 }
 
-var File_contract_proto protoreflect.FileDescriptor
+var File_executor_proto protoreflect.FileDescriptor
 
-const file_contract_proto_rawDesc = "" +
+const file_executor_proto_rawDesc = "" +
 	"\n" +
-	"\x0econtract.proto\x12\x04grpc\"@\n" +
-	"\aRequest\x125\n" +
-	"\finstructions\x18\x01 \x03(\v2\x11.grpc.InstructionR\finstructions\",\n" +
-	"\bResponse\x12 \n" +
-	"\x05items\x18\x01 \x03(\v2\n" +
-	".grpc.ItemR\x05items\"\x96\x01\n" +
+	"\x0eexecutor.proto\x12\n" +
+	"executorpb\"F\n" +
+	"\aRequest\x12;\n" +
+	"\finstructions\x18\x01 \x03(\v2\x17.executorpb.InstructionR\finstructions\"2\n" +
+	"\bResponse\x12&\n" +
+	"\x05items\x18\x01 \x03(\v2\x10.executorpb.ItemR\x05items\"\x96\x01\n" +
 	"\vInstruction\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x13\n" +
 	"\x02op\x18\x02 \x01(\tH\x00R\x02op\x88\x01\x01\x12\x10\n" +
@@ -258,34 +258,34 @@ const file_contract_proto_rawDesc = "" +
 	"\x06_right\".\n" +
 	"\x04Item\x12\x10\n" +
 	"\x03var\x18\x01 \x01(\tR\x03var\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value22\n" +
-	"\x04Calc\x12*\n" +
-	"\tCalculate\x12\r.grpc.Request\x1a\x0e.grpc.Responseb\x06proto3"
+	"\x05value\x18\x02 \x01(\x03R\x05value2A\n" +
+	"\aExecute\x126\n" +
+	"\tCalculate\x12\x13.executorpb.Request\x1a\x14.executorpb.Responseb\x06proto3"
 
 var (
-	file_contract_proto_rawDescOnce sync.Once
-	file_contract_proto_rawDescData []byte
+	file_executor_proto_rawDescOnce sync.Once
+	file_executor_proto_rawDescData []byte
 )
 
-func file_contract_proto_rawDescGZIP() []byte {
-	file_contract_proto_rawDescOnce.Do(func() {
-		file_contract_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_contract_proto_rawDesc), len(file_contract_proto_rawDesc)))
+func file_executor_proto_rawDescGZIP() []byte {
+	file_executor_proto_rawDescOnce.Do(func() {
+		file_executor_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)))
 	})
-	return file_contract_proto_rawDescData
+	return file_executor_proto_rawDescData
 }
 
-var file_contract_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_contract_proto_goTypes = []any{
-	(*Request)(nil),     // 0: grpc.Request
-	(*Response)(nil),    // 1: grpc.Response
-	(*Instruction)(nil), // 2: grpc.Instruction
-	(*Item)(nil),        // 3: grpc.Item
+var file_executor_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_executor_proto_goTypes = []any{
+	(*Request)(nil),     // 0: executorpb.Request
+	(*Response)(nil),    // 1: executorpb.Response
+	(*Instruction)(nil), // 2: executorpb.Instruction
+	(*Item)(nil),        // 3: executorpb.Item
 }
-var file_contract_proto_depIdxs = []int32{
-	2, // 0: grpc.Request.instructions:type_name -> grpc.Instruction
-	3, // 1: grpc.Response.items:type_name -> grpc.Item
-	0, // 2: grpc.Calc.Calculate:input_type -> grpc.Request
-	1, // 3: grpc.Calc.Calculate:output_type -> grpc.Response
+var file_executor_proto_depIdxs = []int32{
+	2, // 0: executorpb.Request.instructions:type_name -> executorpb.Instruction
+	3, // 1: executorpb.Response.items:type_name -> executorpb.Item
+	0, // 2: executorpb.Execute.Calculate:input_type -> executorpb.Request
+	1, // 3: executorpb.Execute.Calculate:output_type -> executorpb.Response
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -293,27 +293,27 @@ var file_contract_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_contract_proto_init() }
-func file_contract_proto_init() {
-	if File_contract_proto != nil {
+func init() { file_executor_proto_init() }
+func file_executor_proto_init() {
+	if File_executor_proto != nil {
 		return
 	}
-	file_contract_proto_msgTypes[2].OneofWrappers = []any{}
+	file_executor_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_contract_proto_rawDesc), len(file_contract_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_executor_proto_rawDesc), len(file_executor_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_contract_proto_goTypes,
-		DependencyIndexes: file_contract_proto_depIdxs,
-		MessageInfos:      file_contract_proto_msgTypes,
+		GoTypes:           file_executor_proto_goTypes,
+		DependencyIndexes: file_executor_proto_depIdxs,
+		MessageInfos:      file_executor_proto_msgTypes,
 	}.Build()
-	File_contract_proto = out.File
-	file_contract_proto_goTypes = nil
-	file_contract_proto_depIdxs = nil
+	File_executor_proto = out.File
+	file_executor_proto_goTypes = nil
+	file_executor_proto_depIdxs = nil
 }
