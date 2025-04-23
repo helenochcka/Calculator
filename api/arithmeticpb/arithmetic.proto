@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package arithmeticpb;
+
+service ArithmeticService {
+  rpc Calculate (CalculationData) returns (Result) {}
+}
+
+message CalculationData {
+  string op = 1;
+  int64 left = 2;
+  int64 right = 3;
+}
+
+message Result {
+  int64 result = 1;
+}

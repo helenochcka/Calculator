@@ -27,3 +27,9 @@ func (rs *ResultStorage) Insert(key string, value int) {
 	defer rs.mu.Unlock()
 	rs.m[key] = value
 }
+
+func (rs *ResultStorage) Clear() {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	rs.m = make(map[string]int)
+}

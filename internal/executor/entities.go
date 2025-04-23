@@ -1,4 +1,4 @@
-package core
+package executor
 
 type Instruction struct {
 	Type      string  `json:"type"`

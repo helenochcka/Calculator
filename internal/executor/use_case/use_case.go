@@ -1,22 +1,23 @@
-package core
+package use_case
 
 import (
-	"context"
+	"Calculator/internal/executor"
+	"Calculator/internal/executor/service"
 	"errors"
 	"sync"
 )
 
 type UseCase struct {
-	service Service
+	service service.Service
 }
 
-func NewUseCase(s Service) UseCase {
+func NewUseCase(s service.Service) UseCase {
 	return UseCase{service: s}
 }
 
-func (uc *UseCase) Execute(ctx *context.Context, instructions []Instruction) ([]Item, error) {
+func (uc *UseCase) Execute(instructions []executor.Instruction) ([]executor.Item, error) {
 
-	var items []Item
+	var items []executor.Item
 	var varsToPrint []string
 
 	var wg sync.WaitGroup
@@ -29,14 +30,14 @@ func (uc *UseCase) Execute(ctx *context.Context, instructions []Instruction) ([]
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				result := uc.service.Algorithm(ctx, &instruction)
+				result := uc.service.Algorithm(&instruction)
 				if result != nil {
 					uc.service.WriteResult(instruction.Result, *result)
 					if uc.service.GetDependentValues(instruction.Result) != nil {
 						wg.Add(1)
 						go func() {
 							defer wg.Done()
-							uc.calcOfDependentVars(ctx, instruction.Result, &wg)
+							uc.calcOfDependentVars(instruction.Result, &wg)
 						}()
 
 					}
@@ -53,22 +54,25 @@ func (uc *UseCase) Execute(ctx *context.Context, instructions []Instruction) ([]
 	wg.Wait()
 
 	for _, varToPrint := range varsToPrint {
-		items = append(items, Item{Var: varToPrint, Value: *uc.service.GetResult(varToPrint)})
+		items = append(items, executor.Item{Var: varToPrint, Value: *uc.service.GetResult(varToPrint)})
 	}
+
+	uc.service.ClearResults()
+	uc.service.ClearDeps()
 
 	return items, nil
 }
 
-func (uc *UseCase) calcOfDependentVars(ctx *context.Context, calcResult string, wg *sync.WaitGroup) {
+func (uc *UseCase) calcOfDependentVars(calcResult string, wg *sync.WaitGroup) {
 	for _, instruction := range *uc.service.GetDependentValues(calcResult) {
-		result := uc.service.Algorithm(ctx, &instruction)
+		result := uc.service.Algorithm(&instruction)
 		if result != nil {
 			uc.service.WriteResult(instruction.Result, *result)
 			if uc.service.GetDependentValues(instruction.Result) != nil {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					uc.calcOfDependentVars(ctx, instruction.Result, wg)
+					uc.calcOfDependentVars(instruction.Result, wg)
 				}()
 			}
 		}

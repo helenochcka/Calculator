@@ -1,22 +1,22 @@
 package gin
 
 import (
-	"Calculator/core"
-	"context"
+	"Calculator/internal/executor"
+	"Calculator/internal/executor/use_case"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type HandlerGin struct {
-	useCase core.UseCase
+	useCase use_case.UseCase
 }
 
-func NewHandlerGin(uc core.UseCase) HandlerGin {
+func NewHandlerGin(uc use_case.UseCase) HandlerGin {
 	return HandlerGin{useCase: uc}
 }
 
 func (hg *HandlerGin) Calculate(c *gin.Context) {
-	var instructions []core.Instruction
+	var instructions []executor.Instruction
 	if err := c.ShouldBindJSON(&instructions); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
