@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ArithmeticServiceClient interface {
-	Calculate(ctx context.Context, in *CalculationData, opts ...grpc.CallOption) (*Result, error)
+	Calculate(ctx context.Context, in *CalculationData, opts ...grpc.CallOption) (*Message, error)
 }
 
 type arithmeticServiceClient struct {
@@ -37,9 +37,9 @@ func NewArithmeticServiceClient(cc grpc.ClientConnInterface) ArithmeticServiceCl
 	return &arithmeticServiceClient{cc}
 }
 
-func (c *arithmeticServiceClient) Calculate(ctx context.Context, in *CalculationData, opts ...grpc.CallOption) (*Result, error) {
+func (c *arithmeticServiceClient) Calculate(ctx context.Context, in *CalculationData, opts ...grpc.CallOption) (*Message, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Result)
+	out := new(Message)
 	err := c.cc.Invoke(ctx, ArithmeticService_Calculate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *arithmeticServiceClient) Calculate(ctx context.Context, in *Calculation
 // All implementations must embed UnimplementedArithmeticServiceServer
 // for forward compatibility.
 type ArithmeticServiceServer interface {
-	Calculate(context.Context, *CalculationData) (*Result, error)
+	Calculate(context.Context, *CalculationData) (*Message, error)
 	mustEmbedUnimplementedArithmeticServiceServer()
 }
 
@@ -62,7 +62,7 @@ type ArithmeticServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedArithmeticServiceServer struct{}
 
-func (UnimplementedArithmeticServiceServer) Calculate(context.Context, *CalculationData) (*Result, error) {
+func (UnimplementedArithmeticServiceServer) Calculate(context.Context, *CalculationData) (*Message, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
 }
 func (UnimplementedArithmeticServiceServer) mustEmbedUnimplementedArithmeticServiceServer() {}

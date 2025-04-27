@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"strconv"
 )
 
 type serverAPI struct {
@@ -26,21 +27,41 @@ func (s *serverAPI) Calculate(
 	in *executorpb.Request,
 ) (*executorpb.Response, error) {
 
-	Instructions := make([]executor.Instruction, 0, len(in.GetInstructions()))
-	for _, genInst := range in.GetInstructions() {
-		instruction := executor.Instruction{
-			Type:      genInst.Type,
-			Operation: genInst.Op,
-			Result:    genInst.Var,
-			Right:     genInst.Right,
-			Left:      genInst.Left,
+	var expressions []executor.Expression
+	varsToPrint := make(map[string]bool)
+	for _, instruction := range in.GetInstructions() {
+		if instruction.Type == "calc" {
+			expression := executor.Expression{
+				Type:      instruction.Type,
+				Operation: *instruction.Op,
+				Variable:  instruction.Var,
+			}
+
+			right, err := strconv.Atoi(*instruction.Right)
+			if err != nil {
+				expression.Right = *instruction.Right
+			} else {
+				expression.Right = right
+			}
+
+			left, err := strconv.Atoi(*instruction.Left)
+			if err != nil {
+				expression.Left = *instruction.Left
+			} else {
+				expression.Left = left
+			}
+
+			expressions = append(expressions, expression)
+		} else if instruction.Type == "print" {
+			varsToPrint[instruction.Var] = true
+		} else {
+			return nil, status.Error(codes.InvalidArgument, "unknown type")
 		}
-		Instructions = append(Instructions, instruction)
 	}
 
-	items, err := s.uc.Execute(Instructions)
+	items, err := s.uc.Execute(expressions, varsToPrint)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to register user")
+		return nil, status.Error(codes.Internal, "failed")
 	}
 
 	genItems := make([]*executorpb.Item, 0, len(items))

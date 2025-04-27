@@ -2,111 +2,44 @@ package service
 
 import (
 	"Calculator/api/arithmeticpb"
-	"Calculator/internal/executor"
 	"context"
-	"strconv"
 )
 
-type InstructionStorage interface {
-	Get(key string) *[]executor.Instruction
-	Insert(key string, value executor.Instruction)
-	Delete(key string)
-	Clear()
-}
-type ResultStorage interface {
-	Get(key string) *int
-	Insert(key string, value int)
-	Clear()
-}
 type Service struct {
-	instructionStorage InstructionStorage
-	resultStorage      ResultStorage
-	client             arithmeticpb.ArithmeticServiceClient
+	client arithmeticpb.ArithmeticServiceClient
+	broker *RabbitMQBroker
 }
 
-func NewService(is InstructionStorage, rs ResultStorage, c arithmeticpb.ArithmeticServiceClient) Service {
-	return Service{instructionStorage: is, resultStorage: rs, client: c}
+func NewService(c arithmeticpb.ArithmeticServiceClient, b *RabbitMQBroker) Service {
+	return Service{client: c, broker: b}
 }
 
-func (s *Service) Algorithm(instruction *executor.Instruction) *int {
-	left := s.castToInt(*instruction.Left)
-	right := s.castToInt(*instruction.Right)
-
-	if left == nil {
-		if s.GetResult(*instruction.Left) == nil {
-			if s.cyclicCheck(*instruction.Left, instruction.Result) {
-				s.instructionStorage.Insert(*instruction.Left, *instruction)
-			}
-		} else {
-			left = s.GetResult(*instruction.Left)
-		}
+func (s *Service) RequestCalculation(left, right int, variable, op string) {
+	req := arithmeticpb.CalculationData{
+		Literal: variable,
+		Op:      op,
+		Left:    int64(left),
+		Right:   int64(right),
 	}
-	if right == nil {
-		if s.GetResult(*instruction.Right) == nil {
-			if s.cyclicCheck(*instruction.Right, instruction.Result) {
-				s.instructionStorage.Insert(*instruction.Right, *instruction)
-			}
-		} else {
-			right = s.GetResult(*instruction.Right)
-		}
+	_, err := s.client.Calculate(context.Background(), &req)
+
+	if err != nil {
+		return
 	}
-	if left != nil && right != nil {
-		req := arithmeticpb.CalculationData{
-			Op:    *instruction.Operation,
-			Left:  int64(*left),
-			Right: int64(*right),
-		}
+}
 
-		response, err := s.client.Calculate(context.Background(), &req)
-
-		if err == nil {
-			result := int(response.Result)
-			return &result
-		}
-
+func (s *Service) DeclareQueue(queueName string) error {
+	err := s.broker.DeclareQueue(queueName)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (s *Service) GetResult(key string) *int {
-	return s.resultStorage.Get(key)
-}
-
-func (s *Service) WriteResult(key string, value int) {
-	s.resultStorage.Insert(key, value)
-}
-
-func (s *Service) GetDependentValues(key string) *[]executor.Instruction {
-	return s.instructionStorage.Get(key)
-}
-
-func (s *Service) DeleteKey(key string) {
-	s.instructionStorage.Delete(key)
-}
-
-func (s *Service) ClearResults() {
-	s.resultStorage.Clear()
-}
-
-func (s *Service) ClearDeps() {
-	s.instructionStorage.Clear()
-}
-
-func (s *Service) cyclicCheck(dependentVar, calculatedVar string) bool {
-	if s.GetDependentValues(dependentVar) != nil {
-		for _, dependence := range *s.GetDependentValues(dependentVar) {
-			if dependence.Result == calculatedVar {
-				return false
-			}
-		}
-	}
-	return true
-}
-
-func (s *Service) castToInt(value string) *int {
-	intValue, err := strconv.Atoi(value)
+func (s *Service) ConsumeResults(queue string, handler MessageHandler) error {
+	err := s.broker.Consume(queue, handler)
 	if err != nil {
-		return nil
+		return err
 	}
-	return &intValue
+	return nil
 }
