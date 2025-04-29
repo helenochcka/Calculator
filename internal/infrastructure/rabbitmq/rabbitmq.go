@@ -1,8 +1,9 @@
-package service
+package rabbitmq
 
 import (
 	"Calculator/api/arithmeticpb"
 	"Calculator/internal/executor"
+	"fmt"
 	"github.com/streadway/amqp"
 	"google.golang.org/protobuf/proto"
 	"log"
@@ -14,24 +15,27 @@ type RabbitMQBroker struct {
 	contentType string
 }
 
-func NewRabbitMQBroker(url string, ct string) (*RabbitMQBroker, error) {
-	conn, err := amqp.Dial(url)
+func NewRabbitMQBroker(uri string, ct string) *RabbitMQBroker {
+	conn, err := amqp.Dial(uri)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
 		conn.Close()
-		return nil, err
+		log.Fatalf("Failed to open a channel: %v", err)
 	}
 
-	return &RabbitMQBroker{conn: conn, ch: ch, contentType: ct}, nil
+	return &RabbitMQBroker{conn: conn, ch: ch, contentType: ct}
 }
 
 func (b *RabbitMQBroker) DeclareQueue(name string) error {
 	_, err := b.ch.QueueDeclare(name, true, false, false, false, nil)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *RabbitMQBroker) Publish(queue string, body []byte) error {
@@ -47,24 +51,27 @@ func (b *RabbitMQBroker) Publish(queue string, body []byte) error {
 	)
 }
 
-func (b *RabbitMQBroker) Consume(queue string, handler MessageHandler) error {
+func (b *RabbitMQBroker) Consume(queue string, handler executor.MessageHandler) error {
 	msgs, err := b.ch.Consume(
 		queue, "", true, false, false, false, nil,
 	)
 	if err != nil {
-		return err
+		return FailedConsumeMsgs
 	}
 
-	for d := range msgs {
+	for msg := range msgs {
 		var result arithmeticpb.Result
-		err := proto.Unmarshal(d.Body, &result)
+		err := proto.Unmarshal(msg.Body, &result)
 		if err != nil {
-			return err
+			return FailedUnmarshalMsg
 		}
-		res := executor.Result{Lit: result.Lit, Result: int(result.Result)}
+		if result.ErrMsg != nil {
+			return fmt.Errorf("%w%v", UnsuccessfulResult, *result.ErrMsg)
+		}
+		res := executor.Result{Key: *result.Key, Value: int(*result.Value)}
 		stop, err := handler(res)
 		if err != nil {
-			log.Printf("Ошибка обработки сообщения: %v", err)
+			return err
 		}
 		if stop {
 			b.ch.Cancel("", false)

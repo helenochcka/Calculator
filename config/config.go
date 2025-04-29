@@ -10,4 +10,9 @@ type Config struct {
 		Address string
 		Port    string
 	} `yaml:"arithmetic_server"`
+
+	RabbitMQBroker struct {
+		URI         string `yaml:"uri"`
+		ContentType string `yaml:"content_type"`
+	} `yaml:"rabbitmq_broker"`
 }

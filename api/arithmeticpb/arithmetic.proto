@@ -2,22 +2,24 @@ syntax = "proto3";
 
 package arithmeticpb;
 
-service ArithmeticService {
+service Arithmetic {
   rpc Calculate (CalculationData) returns (Message) {}
 }
 
 message CalculationData {
-  string literal = 1;
+  string var = 1;
   string op = 2;
   int64 left = 3;
   int64 right = 4;
+  string queueName = 5;
 }
 
 message Message {
-  string msg = 1;
+  string text = 1;
 }
 
 message Result {
-  string lit = 1;
-  int64 result = 2;
+  optional string key = 1;
+  optional int64 value = 2;
+  optional string errMsg = 3;
 }

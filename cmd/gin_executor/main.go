@@ -2,29 +2,27 @@ package main
 
 import (
 	"Calculator/config"
-	ginHandler "Calculator/internal/executor/handlers/gin"
-	executorService "Calculator/internal/executor/service"
-	executorUseCase "Calculator/internal/executor/use_case"
-	"log"
-
+	"Calculator/internal/executor/handlers/gin_handlers"
+	"Calculator/internal/executor/services"
+	"Calculator/internal/executor/use_cases"
+	"Calculator/internal/infrastructure"
+	"Calculator/internal/infrastructure/rabbitmq"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	cfg := config.LoadYamlConfig("config/config.yaml")
 
-	client := executorService.ProduceClient()
-	broker, err := executorService.NewRabbitMQBroker("amqp://guest:guest@localhost:5672/", "application/x-protobuf")
-	if err != nil {
-		log.Panicf("Failed to connect to RabbitMQ: %s", err)
-	}
+	client := infrastructure.ProduceArithmClient(cfg)
+	broker := rabbitmq.NewRabbitMQBroker(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
 	defer broker.Close()
 
-	service := executorService.NewService(client, broker)
-	useCase := executorUseCase.NewUseCase(service)
+	commService := services.NewCommService(client, broker)
+	useCase := use_cases.NewUseCase(commService)
 
-	handler := ginHandler.NewHandlerGin(useCase)
+	handler := gin_handlers.NewHandlerGin(useCase)
 	r := gin.Default()
-	r.POST("/calculate", handler.Calculate)
+	r.Use(gin_handlers.ReqIdMiddleware())
+	r.POST("/execute", handler.Execute)
 	_ = r.Run(cfg.ExecutorServer.Port)
 }

@@ -258,9 +258,9 @@ const file_executor_proto_rawDesc = "" +
 	"\x06_right\".\n" +
 	"\x04Item\x12\x10\n" +
 	"\x03var\x18\x01 \x01(\tR\x03var\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x03R\x05value2A\n" +
-	"\aExecute\x126\n" +
-	"\tCalculate\x12\x13.executorpb.Request\x1a\x14.executorpb.Responseb\x06proto3"
+	"\x05value\x18\x02 \x01(\x03R\x05value2@\n" +
+	"\bExecutor\x124\n" +
+	"\aExecute\x12\x13.executorpb.Request\x1a\x14.executorpb.Responseb\x06proto3"
 
 var (
 	file_executor_proto_rawDescOnce sync.Once
@@ -284,8 +284,8 @@ var file_executor_proto_goTypes = []any{
 var file_executor_proto_depIdxs = []int32{
 	2, // 0: executorpb.Request.instructions:type_name -> executorpb.Instruction
 	3, // 1: executorpb.Response.items:type_name -> executorpb.Item
-	0, // 2: executorpb.Execute.Calculate:input_type -> executorpb.Request
-	1, // 3: executorpb.Execute.Calculate:output_type -> executorpb.Response
+	0, // 2: executorpb.Executor.Execute:input_type -> executorpb.Request
+	1, // 3: executorpb.Executor.Execute:output_type -> executorpb.Response
 	3, // [3:4] is the sub-list for method output_type
 	2, // [2:3] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

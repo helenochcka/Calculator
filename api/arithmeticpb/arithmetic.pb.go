@@ -23,10 +23,11 @@ const (
 
 type CalculationData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Literal       string                 `protobuf:"bytes,1,opt,name=literal,proto3" json:"literal,omitempty"`
+	Var           string                 `protobuf:"bytes,1,opt,name=var,proto3" json:"var,omitempty"`
 	Op            string                 `protobuf:"bytes,2,opt,name=op,proto3" json:"op,omitempty"`
 	Left          int64                  `protobuf:"varint,3,opt,name=left,proto3" json:"left,omitempty"`
 	Right         int64                  `protobuf:"varint,4,opt,name=right,proto3" json:"right,omitempty"`
+	QueueName     string                 `protobuf:"bytes,5,opt,name=queueName,proto3" json:"queueName,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -61,9 +62,9 @@ func (*CalculationData) Descriptor() ([]byte, []int) {
 	return file_arithmetic_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CalculationData) GetLiteral() string {
+func (x *CalculationData) GetVar() string {
 	if x != nil {
-		return x.Literal
+		return x.Var
 	}
 	return ""
 }
@@ -89,9 +90,16 @@ func (x *CalculationData) GetRight() int64 {
 	return 0
 }
 
+func (x *CalculationData) GetQueueName() string {
+	if x != nil {
+		return x.QueueName
+	}
+	return ""
+}
+
 type Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Msg           string                 `protobuf:"bytes,1,opt,name=msg,proto3" json:"msg,omitempty"`
+	Text          string                 `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -126,17 +134,18 @@ func (*Message) Descriptor() ([]byte, []int) {
 	return file_arithmetic_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Message) GetMsg() string {
+func (x *Message) GetText() string {
 	if x != nil {
-		return x.Msg
+		return x.Text
 	}
 	return ""
 }
 
 type Result struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Lit           string                 `protobuf:"bytes,1,opt,name=lit,proto3" json:"lit,omitempty"`
-	Result        int64                  `protobuf:"varint,2,opt,name=result,proto3" json:"result,omitempty"`
+	Key           *string                `protobuf:"bytes,1,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *int64                 `protobuf:"varint,2,opt,name=value,proto3,oneof" json:"value,omitempty"`
+	ErrMsg        *string                `protobuf:"bytes,3,opt,name=errMsg,proto3,oneof" json:"errMsg,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -166,41 +175,54 @@ func (x *Result) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Variable.ProtoReflect.Descriptor instead.
+// Deprecated: Use Result.ProtoReflect.Descriptor instead.
 func (*Result) Descriptor() ([]byte, []int) {
 	return file_arithmetic_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Result) GetLit() string {
-	if x != nil {
-		return x.Lit
+func (x *Result) GetKey() string {
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
-func (x *Result) GetResult() int64 {
-	if x != nil {
-		return x.Result
+func (x *Result) GetValue() int64 {
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return 0
+}
+
+func (x *Result) GetErrMsg() string {
+	if x != nil && x.ErrMsg != nil {
+		return *x.ErrMsg
+	}
+	return ""
 }
 
 var File_arithmetic_proto protoreflect.FileDescriptor
 
 const file_arithmetic_proto_rawDesc = "" +
 	"\n" +
-	"\x10arithmetic.proto\x12\farithmeticpb\"e\n" +
-	"\x0fCalculationData\x12\x18\n" +
-	"\aliteral\x18\x01 \x01(\tR\aliteral\x12\x0e\n" +
+	"\x10arithmetic.proto\x12\farithmeticpb\"{\n" +
+	"\x0fCalculationData\x12\x10\n" +
+	"\x03var\x18\x01 \x01(\tR\x03var\x12\x0e\n" +
 	"\x02op\x18\x02 \x01(\tR\x02op\x12\x12\n" +
 	"\x04left\x18\x03 \x01(\x03R\x04left\x12\x14\n" +
-	"\x05right\x18\x04 \x01(\x03R\x05right\"\x1b\n" +
-	"\aMessage\x12\x10\n" +
-	"\x03msg\x18\x01 \x01(\tR\x03msg\"2\n" +
-	"\x06Result\x12\x10\n" +
-	"\x03lit\x18\x01 \x01(\tR\x03lit\x12\x16\n" +
-	"\x06result\x18\x02 \x01(\x03R\x06result2X\n" +
-	"\x11ArithmeticService\x12C\n" +
+	"\x05right\x18\x04 \x01(\x03R\x05right\x12\x1c\n" +
+	"\tqueueName\x18\x05 \x01(\tR\tqueueName\"\x1d\n" +
+	"\aMessage\x12\x12\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"t\n" +
+	"\x06Result\x12\x15\n" +
+	"\x03key\x18\x01 \x01(\tH\x00R\x03key\x88\x01\x01\x12\x19\n" +
+	"\x05value\x18\x02 \x01(\x03H\x01R\x05value\x88\x01\x01\x12\x1b\n" +
+	"\x06errMsg\x18\x03 \x01(\tH\x02R\x06errMsg\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_valueB\t\n" +
+	"\a_errMsg2Q\n" +
+	"\n" +
+	"Arithmetic\x12C\n" +
 	"\tCalculate\x12\x1d.arithmeticpb.CalculationData\x1a\x15.arithmeticpb.Message\"\x00b\x06proto3"
 
 var (
@@ -219,11 +241,11 @@ var file_arithmetic_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_arithmetic_proto_goTypes = []any{
 	(*CalculationData)(nil), // 0: arithmeticpb.CalculationData
 	(*Message)(nil),         // 1: arithmeticpb.Message
-	(*Result)(nil),          // 2: arithmeticpb.Variable
+	(*Result)(nil),          // 2: arithmeticpb.Result
 }
 var file_arithmetic_proto_depIdxs = []int32{
-	0, // 0: arithmeticpb.ArithmeticService.Calculate:input_type -> arithmeticpb.CalculationData
-	1, // 1: arithmeticpb.ArithmeticService.Calculate:output_type -> arithmeticpb.Message
+	0, // 0: arithmeticpb.Arithmetic.Execute:input_type -> arithmeticpb.CalculationData
+	1, // 1: arithmeticpb.Arithmetic.Execute:output_type -> arithmeticpb.Message
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -236,6 +258,7 @@ func file_arithmetic_proto_init() {
 	if File_arithmetic_proto != nil {
 		return
 	}
+	file_arithmetic_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

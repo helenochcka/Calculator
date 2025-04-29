@@ -1,4 +1,4 @@
-package service
+package infrastructure
 
 import (
 	"Calculator/api/arithmeticpb"
@@ -8,8 +8,7 @@ import (
 	"log"
 )
 
-func ProduceClient() arithmeticpb.ArithmeticServiceClient {
-	cfg := config.LoadYamlConfig("config/config.yaml")
+func ProduceArithmClient(cfg config.Config) arithmeticpb.ArithmeticClient {
 
 	conn, err := grpc.NewClient(
 		cfg.ArithmeticServer.Address+cfg.ArithmeticServer.Port,
@@ -21,5 +20,5 @@ func ProduceClient() arithmeticpb.ArithmeticServiceClient {
 
 	conn.Connect()
 
-	return arithmeticpb.NewArithmeticServiceClient(conn)
+	return arithmeticpb.NewArithmeticClient(conn)
 }

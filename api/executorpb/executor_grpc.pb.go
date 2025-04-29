@@ -19,101 +19,101 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Execute_Calculate_FullMethodName = "/executorpb.Execute/Calculate"
+	Executor_Execute_FullMethodName = "/executorpb.Executor/Execute"
 )
 
-// ExecuteClient is the client API for Execute service.
+// ExecutorClient is the client API for Executor service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ExecuteClient interface {
-	Calculate(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+type ExecutorClient interface {
+	Execute(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
-type executeClient struct {
+type executorClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewExecuteClient(cc grpc.ClientConnInterface) ExecuteClient {
-	return &executeClient{cc}
+func NewExecutorClient(cc grpc.ClientConnInterface) ExecutorClient {
+	return &executorClient{cc}
 }
 
-func (c *executeClient) Calculate(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
+func (c *executorClient) Execute(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
-	err := c.cc.Invoke(ctx, Execute_Calculate_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, Executor_Execute_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ExecuteServer is the server API for Execute service.
-// All implementations must embed UnimplementedExecuteServer
+// ExecutorServer is the server API for Executor service.
+// All implementations must embed UnimplementedExecutorServer
 // for forward compatibility.
-type ExecuteServer interface {
-	Calculate(context.Context, *Request) (*Response, error)
-	mustEmbedUnimplementedExecuteServer()
+type ExecutorServer interface {
+	Execute(context.Context, *Request) (*Response, error)
+	mustEmbedUnimplementedExecutorServer()
 }
 
-// UnimplementedExecuteServer must be embedded to have
+// UnimplementedExecutorServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedExecuteServer struct{}
+type UnimplementedExecutorServer struct{}
 
-func (UnimplementedExecuteServer) Calculate(context.Context, *Request) (*Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Calculate not implemented")
+func (UnimplementedExecutorServer) Execute(context.Context, *Request) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
-func (UnimplementedExecuteServer) mustEmbedUnimplementedExecuteServer() {}
-func (UnimplementedExecuteServer) testEmbeddedByValue()                 {}
+func (UnimplementedExecutorServer) mustEmbedUnimplementedExecutorServer() {}
+func (UnimplementedExecutorServer) testEmbeddedByValue()                  {}
 
-// UnsafeExecuteServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ExecuteServer will
+// UnsafeExecutorServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ExecutorServer will
 // result in compilation errors.
-type UnsafeExecuteServer interface {
-	mustEmbedUnimplementedExecuteServer()
+type UnsafeExecutorServer interface {
+	mustEmbedUnimplementedExecutorServer()
 }
 
-func RegisterExecuteServer(s grpc.ServiceRegistrar, srv ExecuteServer) {
-	// If the following call pancis, it indicates UnimplementedExecuteServer was
+func RegisterExecutorServer(s grpc.ServiceRegistrar, srv ExecutorServer) {
+	// If the following call pancis, it indicates UnimplementedExecutorServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&Execute_ServiceDesc, srv)
+	s.RegisterService(&Executor_ServiceDesc, srv)
 }
 
-func _Execute_Calculate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Executor_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ExecuteServer).Calculate(ctx, in)
+		return srv.(ExecutorServer).Execute(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Execute_Calculate_FullMethodName,
+		FullMethod: Executor_Execute_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExecuteServer).Calculate(ctx, req.(*Request))
+		return srv.(ExecutorServer).Execute(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Execute_ServiceDesc is the grpc.ServiceDesc for Execute service.
+// Executor_ServiceDesc is the grpc.ServiceDesc for Executor service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Execute_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "executorpb.Execute",
-	HandlerType: (*ExecuteServer)(nil),
+var Executor_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "executorpb.Executor",
+	HandlerType: (*ExecutorServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Calculate",
-			Handler:    _Execute_Calculate_Handler,
+			MethodName: "Execute",
+			Handler:    _Executor_Execute_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

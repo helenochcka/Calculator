@@ -2,8 +2,10 @@ package main
 
 import (
 	"Calculator/config"
-	grpcServer "Calculator/internal/arithmetic"
-	executorService "Calculator/internal/executor/service"
+	"Calculator/internal/arithmetic/handlers"
+	"Calculator/internal/arithmetic/services"
+	"Calculator/internal/arithmetic/use_cases"
+	"Calculator/internal/infrastructure/rabbitmq"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -12,20 +14,18 @@ import (
 func main() {
 	cfg := config.LoadYamlConfig("config/config.yaml")
 
+	broker := rabbitmq.NewRabbitMQBroker(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
+	defer broker.Close()
+
+	resultService := services.NewResultService(broker)
+	arithmService := services.NewArithmService()
+	useCase := use_cases.NewUseCase(resultService, arithmService)
+
 	grpcListener, err := net.Listen("tcp", cfg.ArithmeticServer.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	server := grpc.NewServer()
-
-	broker, err := executorService.NewRabbitMQBroker("amqp://guest:guest@localhost:5672/", "application/x-protobuf")
-	if err != nil {
-		log.Panicf("Failed to connect to RabbitMQ: %s", err)
-	}
-	defer broker.Close()
-
-	grpcServer.Register(server, broker)
-	if err := server.Serve(grpcListener); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	handlers.Register(server, useCase)
+	server.Serve(grpcListener)
 }

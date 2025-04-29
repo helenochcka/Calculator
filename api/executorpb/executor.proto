@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package executorpb;
 
-service Execute {
-  rpc Calculate (Request) returns (Response);
+service Executor {
+  rpc Execute (Request) returns (Response);
 }
 
 message Request {
