@@ -8,12 +8,12 @@ import (
 )
 
 type UseCase struct {
-	brokerService services.ResultService
-	arithmService services.ArithmService
+	brokerService *services.ResultService
+	arithmService *services.ArithmService
 }
 
-func NewUseCase(bs services.ResultService, as services.ArithmService) UseCase {
-	return UseCase{brokerService: bs, arithmService: as}
+func NewUseCase(bs *services.ResultService, as *services.ArithmService) *UseCase {
+	return &UseCase{brokerService: bs, arithmService: as}
 }
 
 func (uc *UseCase) Execute(expression arithmetic.Expression, queueName string) {

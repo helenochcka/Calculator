@@ -3,17 +3,24 @@ package services
 import (
 	"Calculator/api/arithmeticpb"
 	"Calculator/internal/arithmetic"
-	"Calculator/internal/infrastructure/rabbitmq"
+	"Calculator/internal/executor"
 	"google.golang.org/protobuf/proto"
 	"log"
 )
 
-type ResultService struct {
-	broker *rabbitmq.RabbitMQBroker
+type BrokerClient interface {
+	DeclareQueue(name string) error
+	Publish(queue string, body []byte) error
+	Consume(queue string, handler executor.MessageHandler) error
+	Close() error
 }
 
-func NewResultService(b *rabbitmq.RabbitMQBroker) ResultService {
-	return ResultService{broker: b}
+type ResultService struct {
+	brokerClient BrokerClient
+}
+
+func NewResultService(bc BrokerClient) *ResultService {
+	return &ResultService{brokerClient: bc}
 }
 
 func (rs *ResultService) PublishResult(result arithmetic.Result, queueName string) {
@@ -24,7 +31,7 @@ func (rs *ResultService) PublishResult(result arithmetic.Result, queueName strin
 		log.Fatalf("Failed to marshal result: %s", err)
 	}
 
-	err = rs.broker.Publish(queueName, body)
+	err = rs.brokerClient.Publish(queueName, body)
 	if err != nil {
 		log.Fatalf("Failed to publish message: %s", err)
 	}
@@ -39,7 +46,7 @@ func (rs *ResultService) PublishError(errMsg string, queueName string) {
 		log.Fatalf("Failed to marshal result: %s", err)
 	}
 
-	err = rs.broker.Publish(queueName, body)
+	err = rs.brokerClient.Publish(queueName, body)
 	if err != nil {
 		log.Fatalf("Failed to publish message: %s", err)
 	}

@@ -1,10 +1,15 @@
 package config
 
 type Config struct {
-	ExecutorServer struct {
+	ExecutorGinServer struct {
 		Address string
 		Port    string
-	} `yaml:"executor_server"`
+	} `yaml:"executor_gin_server"`
+
+	ExecutorGRPCServer struct {
+		Address string
+		Port    string
+	} `yaml:"executor_grpc_server"`
 
 	ArithmeticServer struct {
 		Address string

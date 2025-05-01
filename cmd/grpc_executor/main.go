@@ -5,8 +5,7 @@ import (
 	"Calculator/internal/executor/handlers/grpc_handlers"
 	"Calculator/internal/executor/services"
 	"Calculator/internal/executor/use_cases"
-	"Calculator/internal/infrastructure"
-	"Calculator/internal/infrastructure/rabbitmq"
+	"Calculator/internal/infrastructure/factories"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -15,14 +14,14 @@ import (
 func main() {
 	cfg := config.LoadYamlConfig("config/config.yaml")
 
-	client := infrastructure.ProduceArithmClient(cfg)
-	broker := rabbitmq.NewRabbitMQBroker(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
+	client := factories.ProduceArithmClient(cfg)
+	broker := factories.ProduceRabbitMQClient(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
 	defer broker.Close()
 
 	commService := services.NewCommService(client, broker)
 	useCase := use_cases.NewUseCase(commService)
 
-	grpcListener, err := net.Listen("tcp", cfg.ExecutorServer.Port)
+	grpcListener, err := net.Listen("tcp", cfg.ExecutorGRPCServer.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

@@ -10,10 +10,10 @@ import (
 
 type ArithmServer struct {
 	arithmeticpb.UnimplementedArithmeticServer
-	useCase use_cases.UseCase
+	useCase *use_cases.UseCase
 }
 
-func Register(grpcServer *grpc.Server, uc use_cases.UseCase) {
+func Register(grpcServer *grpc.Server, uc *use_cases.UseCase) {
 	arithmeticpb.RegisterArithmeticServer(grpcServer, &ArithmServer{useCase: uc})
 }
 

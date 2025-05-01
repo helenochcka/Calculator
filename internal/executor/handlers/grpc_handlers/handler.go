@@ -13,18 +13,18 @@ import (
 	"strconv"
 )
 
-type serverAPI struct {
+type ServerAPI struct {
 	executorpb.UnimplementedExecutorServer
-	uc use_cases.UseCase
+	uc *use_cases.UseCase
 }
 
 func Register(
 	gRPCServer *grpc.Server,
-	useCase use_cases.UseCase) {
-	executorpb.RegisterExecutorServer(gRPCServer, &serverAPI{uc: useCase})
+	useCase *use_cases.UseCase) {
+	executorpb.RegisterExecutorServer(gRPCServer, &ServerAPI{uc: useCase})
 }
 
-func (s *serverAPI) Execute(
+func (s *ServerAPI) Execute(
 	ctx context.Context,
 	in *executorpb.Request,
 ) (*executorpb.Response, error) {
@@ -46,7 +46,7 @@ func (s *serverAPI) Execute(
 		return nil, status.Error(codes.Internal, errors.New("request id is missing in context").Error())
 	}
 
-	items, err := s.uc.Execute(ctx, expressions, varsToPrint)
+	items, err := s.uc.Execute(ctx, &expressions, varsToPrint)
 	if err != nil {
 		return nil, s.gRPCErrMap(err)
 	}
@@ -54,7 +54,7 @@ func (s *serverAPI) Execute(
 	genItems := make([]*executorpb.Item, 0, len(items))
 	for _, item := range items {
 		genItem := executorpb.Item{
-			Var:   item.Var,
+			Var:   item.Key,
 			Value: int64(item.Value),
 		}
 		genItems = append(genItems, &genItem)
@@ -63,7 +63,7 @@ func (s *serverAPI) Execute(
 	return &executorpb.Response{Items: genItems}, nil
 }
 
-func (s *serverAPI) distributeInstructions(
+func (s *ServerAPI) distributeInstructions(
 	instruction *executorpb.Instruction,
 	varsToPrint map[string]bool) (*executor.Expression, error) {
 	if instruction.Type == "calc" {
@@ -92,20 +92,20 @@ func (s *serverAPI) distributeInstructions(
 		varsToPrint[instruction.Var] = false
 		return nil, nil
 	} else {
-		return nil, fmt.Errorf("%w: %v", executor.UnknownTypeOfInstruction, instruction.Type)
+		return nil, fmt.Errorf("%w: %v", executor.ErrUnknownInstructionType, instruction.Type)
 	}
 }
 
-func (s *serverAPI) gRPCErrMap(err error) error {
+func (s *ServerAPI) gRPCErrMap(err error) error {
 	switch {
-	case errors.Is(err, executor.CyclicDependency) ||
-		errors.Is(err, executor.UnknownTypeOfInstruction) ||
+	case errors.Is(err, executor.ErrCyclicDependency) ||
+		errors.Is(err, executor.ErrUnknownInstructionType) ||
 		errors.Is(err, executor.ErrCalcExpression) ||
-		errors.Is(err, executor.VarNeverBeCalc):
+		errors.Is(err, executor.ErrVarNeverBeCalc):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, executor.VarIsAlreadyUsed):
+	case errors.Is(err, executor.ErrVarAlreadyUsed):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, executor.VarToPrintNotFound):
+	case errors.Is(err, executor.ErrVarToPrintNotFound):
 		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())

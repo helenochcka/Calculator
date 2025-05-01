@@ -3,8 +3,8 @@ package services
 type ArithmService struct {
 }
 
-func NewArithmService() ArithmService {
-	return ArithmService{}
+func NewArithmService() *ArithmService {
+	return &ArithmService{}
 }
 
 func (as *ArithmService) Sum(left, right int64) int64 {

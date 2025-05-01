@@ -1,6 +1,7 @@
 package gin_handlers
 
 import (
+	"Calculator/internal/executor/values"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -8,7 +9,7 @@ import (
 func ReqIdMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := uuid.NewString()
-		c.Set("request_id", id)
+		c.Set(values.RequestIdKey, id)
 		c.Next()
 	}
 }

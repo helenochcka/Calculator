@@ -5,7 +5,7 @@ import (
 	"Calculator/internal/arithmetic/handlers"
 	"Calculator/internal/arithmetic/services"
 	"Calculator/internal/arithmetic/use_cases"
-	"Calculator/internal/infrastructure/rabbitmq"
+	"Calculator/internal/infrastructure/factories"
 	"google.golang.org/grpc"
 	"log"
 	"net"
@@ -14,7 +14,7 @@ import (
 func main() {
 	cfg := config.LoadYamlConfig("config/config.yaml")
 
-	broker := rabbitmq.NewRabbitMQBroker(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
+	broker := factories.ProduceRabbitMQClient(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
 	defer broker.Close()
 
 	resultService := services.NewResultService(broker)

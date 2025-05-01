@@ -1,9 +1,9 @@
-package executor
+package gin_handlers
 
 type Instruction struct {
-	Type      string      `json:"type"`
+	Type      string      `json:"type" binding:"required"`
 	Operation *string     `json:"op"`
-	Variable  string      `json:"var"`
+	Variable  string      `json:"var" binding:"required"`
 	Left      interface{} `json:"left"`
 	Right     interface{} `json:"right"`
 }
