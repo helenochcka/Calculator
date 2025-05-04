@@ -5,19 +5,23 @@ import (
 	"Calculator/internal/arithmetic"
 	"Calculator/internal/arithmetic/use_cases"
 	"context"
+	"fmt"
 	"google.golang.org/grpc"
 )
 
-type ArithmServer struct {
+type ArithmeticServer struct {
 	arithmeticpb.UnimplementedArithmeticServer
-	useCase *use_cases.UseCase
+	uc *use_cases.UseCase
 }
 
-func Register(grpcServer *grpc.Server, uc *use_cases.UseCase) {
-	arithmeticpb.RegisterArithmeticServer(grpcServer, &ArithmServer{useCase: uc})
+func Register(gs *grpc.Server, uc *use_cases.UseCase) {
+	arithmeticpb.RegisterArithmeticServer(gs, &ArithmeticServer{uc: uc})
 }
 
-func (as *ArithmServer) Calculate(c context.Context, in *arithmeticpb.CalculationData) (*arithmeticpb.Message, error) {
+func (as *ArithmeticServer) Calculate(
+	ctx context.Context,
+	in *arithmeticpb.CalculationData,
+) (*arithmeticpb.Message, error) {
 	expression := arithmetic.Expression{
 		Variable: in.GetVar(),
 		Op:       in.GetOp(),
@@ -25,9 +29,9 @@ func (as *ArithmServer) Calculate(c context.Context, in *arithmeticpb.Calculatio
 		Right:    in.GetRight(),
 	}
 
-	go as.useCase.Execute(expression, in.GetQueueName())
+	go as.uc.Execute(expression, in.GetQueueName())
 
 	return &arithmeticpb.Message{
-		Text: "Expression received by arithmetic service",
+		Text: fmt.Sprintf("Expression received: %v", expression),
 	}, nil
 }

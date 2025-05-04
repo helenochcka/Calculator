@@ -18,7 +18,7 @@ func main() {
 	defer broker.Close()
 
 	resultService := services.NewResultService(broker)
-	arithmService := services.NewArithmService()
+	arithmService := services.NewArithmeticService()
 	useCase := use_cases.NewUseCase(resultService, arithmService)
 
 	grpcListener, err := net.Listen("tcp", cfg.ArithmeticServer.Port)

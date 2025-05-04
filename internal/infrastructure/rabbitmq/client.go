@@ -39,25 +39,25 @@ func (b *Client) Publish(queue string, body []byte) error {
 	)
 }
 
-func (b *Client) Consume(queue string, handler executor.MessageHandler) error {
+func (b *Client) Consume(queue string, rp executor.ResultProcessor) error {
 	msgs, err := b.ch.Consume(
 		queue, "", true, false, false, false, nil,
 	)
 	if err != nil {
-		return FailedConsumeMsgs
+		return ErrConsumingMsgs
 	}
 
 	for msg := range msgs {
-		var result arithmeticpb.Result
-		err := proto.Unmarshal(msg.Body, &result)
+		var pbResult arithmeticpb.Result
+		err = proto.Unmarshal(msg.Body, &pbResult)
 		if err != nil {
-			return FailedUnmarshalMsg
+			return ErrUnmarshallingMsg
 		}
-		if result.ErrMsg != nil {
-			return fmt.Errorf("%w%v", UnsuccessfulResult, *result.ErrMsg)
+		if pbResult.ErrMsg != nil {
+			return fmt.Errorf("%w%v", ErrCalculatingResult, *pbResult.ErrMsg)
 		}
-		res := executor.Result{Key: *result.Key, Value: int(*result.Value)}
-		stop, err := handler(res)
+		result := executor.Result{Key: *pbResult.Key, Value: int(*pbResult.Value)}
+		stop, err := rp(result)
 		if err != nil {
 			return err
 		}

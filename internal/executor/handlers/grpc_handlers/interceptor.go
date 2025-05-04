@@ -1,6 +1,7 @@
 package grpc_handlers
 
 import (
+	"Calculator/internal/executor/values"
 	"context"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -13,9 +14,8 @@ func ReqIdInterceptor() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp interface{}, err error) {
-
 		reqId := uuid.NewString()
-		ctx = context.WithValue(ctx, "request_id", reqId)
+		ctx = context.WithValue(ctx, values.RequestIdKey, reqId)
 		return handler(ctx, req)
 	}
 }

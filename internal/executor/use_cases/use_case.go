@@ -5,83 +5,97 @@ import (
 	"Calculator/internal/executor/dto"
 	"Calculator/internal/executor/services"
 	"context"
-	"fmt"
 )
 
 type UseCase struct {
-	service *services.CommService
+	cs *services.CommunicationService
+	vs *services.ValidationService
+	gs *services.GetterService
 }
 
-func NewUseCase(s *services.CommService) *UseCase {
-	return &UseCase{service: s}
+func NewUseCase(
+	cs *services.CommunicationService,
+	vs *services.ValidationService,
+	gs *services.GetterService,
+) *UseCase {
+	return &UseCase{cs: cs, vs: vs, gs: gs}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]executor.Result, error) {
-	expressionMap := make(map[string][]executor.Expression)
-	resultMap := make(map[string]int)
-	expressionVars := make(map[string]bool)
-
-	var prints []executor.Result
-
-	reqId := ctx.Value("request_id").(string)
-	if err := uc.service.DeclareQueue(reqId); err != nil {
+	reqId, err := uc.gs.GetReqIdFromCtx(ctx)
+	if err != nil {
 		return nil, err
 	}
 
+	if err = uc.cs.DeclareResultsQueue(*reqId); err != nil {
+		return nil, err
+	}
+
+	dependencyMap := make(map[string][]executor.Expression)
+	expressionVars := make(map[string]bool)
+
 	for _, expression := range gi.Expressions {
-		if _, ok := gi.VarsToPrint[expression.Variable]; ok {
-			gi.VarsToPrint[expression.Variable] = true
-		}
-		if _, ok := expressionVars[expression.Variable]; ok {
-			return nil, fmt.Errorf("%w: %v", executor.ErrVarAlreadyUsed, expression.Variable)
+		if err = uc.vs.CheckIfVarAlreadyUsed(expressionVars, expression.Variable); err != nil {
+			return nil, err
 		}
 		expressionVars[expression.Variable] = true
+
+		if err = uc.vs.ValidateArgType(expression.Left); err != nil {
+			return nil, err
+		}
+		if err = uc.vs.ValidateArgType(expression.Right); err != nil {
+			return nil, err
+		}
+
 		left, leftIsInt := expression.Left.(int)
 		right, rightIsInt := expression.Right.(int)
 		if leftIsInt && rightIsInt {
-			uc.service.RequestCalculation(reqId, left, right, expression.Variable, expression.Operation)
+
+			cd := dto.CalculationData{
+				Variable:  expression.Variable,
+				Operation: expression.Operation,
+				Left:      left,
+				Right:     right,
+				QueueName: *reqId,
+			}
+			if err = uc.cs.RequestCalculation(&cd); err != nil {
+				return nil, err
+			}
 			continue
 		}
 
 		if !leftIsInt {
-			if depExpressions := expressionMap[expression.Variable]; depExpressions != nil {
-				for _, dep := range depExpressions {
-					if dep.Variable == expression.Left.(string) {
-						return nil, fmt.Errorf("%wfor variables: %v", executor.ErrCyclicDependency, fmt.Sprintf("%s and %s", expression.Variable, dep.Variable))
-					}
-				}
+			err = uc.vs.CheckCyclicDependency(dependencyMap[expression.Variable], expression.Left.(string))
+			if err != nil {
+				return nil, err
 			}
-			expressionMap[expression.Left.(string)] = append(expressionMap[expression.Left.(string)], expression)
+			dependencyMap[expression.Left.(string)] = append(dependencyMap[expression.Left.(string)], expression)
 		}
 		if !rightIsInt {
-			if depExpressions := expressionMap[expression.Variable]; depExpressions != nil {
-				for _, dep := range depExpressions {
-					if dep.Variable == expression.Right.(string) {
-						return nil, fmt.Errorf("%wfor variables: %v", executor.ErrCyclicDependency, fmt.Sprintf("%s and %s", expression.Variable, dep.Variable))
-					}
-				}
+			err = uc.vs.CheckCyclicDependency(dependencyMap[expression.Variable], expression.Right.(string))
+			if err != nil {
+				return nil, err
 			}
-			expressionMap[expression.Right.(string)] = append(expressionMap[expression.Right.(string)], expression)
+			dependencyMap[expression.Right.(string)] = append(dependencyMap[expression.Right.(string)], expression)
 		}
 	}
 
-	for expressionVar := range expressionMap {
-		if _, ok := expressionVars[expressionVar]; !ok {
-			return nil, fmt.Errorf("%w: %v", executor.ErrVarNeverBeCalc, expressionVar)
-		}
+	if err = uc.vs.CheckIfArgNeverCalculated(dependencyMap, expressionVars); err != nil {
+		return nil, err
 	}
 
-	for variable, varToPrint := range gi.VarsToPrint {
-		if !varToPrint {
-			return nil, fmt.Errorf("%w: %v", executor.ErrVarToPrintNotFound, variable)
-		}
+	if err = uc.vs.CheckIfPrintVarNeverCalculated(gi.VarsToPrint, expressionVars); err != nil {
+		return nil, err
 	}
 
-	handlerFunc := func(result executor.Result) (stop bool, err error) {
+	resultsToPrint := make([]executor.Result, 0, len(gi.VarsToPrint))
+	resultMap := make(map[string]int, len(expressionVars))
+
+	resultProcessor := func(result executor.Result) (stop bool, err error) {
 		resultMap[result.Key] = result.Value
 
 		if gi.VarsToPrint[result.Key] {
-			prints = append(prints, result)
+			resultsToPrint = append(resultsToPrint, result)
 			delete(gi.VarsToPrint, result.Key)
 		}
 
@@ -89,44 +103,39 @@ func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]
 			return true, nil
 		}
 
-		if expressionMap[result.Key] != nil {
-			for _, expression := range expressionMap[result.Key] {
-				var left, right int
+		if dependencyMap[result.Key] != nil {
+			for _, expression := range dependencyMap[result.Key] {
 
-				switch expression.Left.(type) {
-				case string:
-					res, ok := resultMap[expression.Left.(string)]
-					if !ok {
-						continue
-					}
-					left = res
-				case int:
-					left = expression.Left.(int)
+				left, ok := uc.gs.GetVarValue(expression.Left, resultMap)
+				if !ok {
+					continue
+				}
+				right, ok := uc.gs.GetVarValue(expression.Right, resultMap)
+				if !ok {
+					continue
 				}
 
-				switch expression.Right.(type) {
-				case string:
-					res, ok := resultMap[expression.Right.(string)]
-					if !ok {
-						continue
-					}
-					right = res
-				case int:
-					right = expression.Right.(int)
+				cd := dto.CalculationData{
+					Variable:  expression.Variable,
+					Operation: expression.Operation,
+					Left:      *left,
+					Right:     *right,
+					QueueName: *reqId,
 				}
-
-				uc.service.RequestCalculation(reqId, left, right, expression.Variable, expression.Operation)
+				if err = uc.cs.RequestCalculation(&cd); err != nil {
+					return true, err
+				}
 			}
-			delete(expressionMap, result.Key)
+			delete(dependencyMap, result.Key)
 		}
 
 		return false, nil
 	}
 
-	err := uc.service.ConsumeResults(reqId, handlerFunc)
+	err = uc.cs.ConsumeResults(*reqId, resultProcessor)
 	if err != nil {
 		return nil, err
 	}
 
-	return prints, nil
+	return resultsToPrint, nil
 }

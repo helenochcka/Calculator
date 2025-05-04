@@ -1,20 +1,20 @@
 package services
 
-type ArithmService struct {
+type ArithmeticService struct {
 }
 
-func NewArithmService() *ArithmService {
-	return &ArithmService{}
+func NewArithmeticService() *ArithmeticService {
+	return &ArithmeticService{}
 }
 
-func (as *ArithmService) Sum(left, right int64) int64 {
+func (as *ArithmeticService) Sum(left, right int64) int64 {
 	return left + right
 }
 
-func (as *ArithmService) Multi(left, right int64) int64 {
+func (as *ArithmeticService) Multi(left, right int64) int64 {
 	return left * right
 }
 
-func (as *ArithmService) Sub(left, right int64) int64 {
+func (as *ArithmeticService) Sub(left, right int64) int64 {
 	return left - right
 }

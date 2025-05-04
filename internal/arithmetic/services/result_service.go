@@ -11,16 +11,16 @@ import (
 type BrokerClient interface {
 	DeclareQueue(name string) error
 	Publish(queue string, body []byte) error
-	Consume(queue string, handler executor.MessageHandler) error
+	Consume(queue string, handler executor.ResultProcessor) error
 	Close() error
 }
 
 type ResultService struct {
-	brokerClient BrokerClient
+	bc BrokerClient
 }
 
 func NewResultService(bc BrokerClient) *ResultService {
-	return &ResultService{brokerClient: bc}
+	return &ResultService{bc: bc}
 }
 
 func (rs *ResultService) PublishResult(result arithmetic.Result, queueName string) {
@@ -28,14 +28,13 @@ func (rs *ResultService) PublishResult(result arithmetic.Result, queueName strin
 
 	body, err := proto.Marshal(&msg)
 	if err != nil {
-		log.Fatalf("Failed to marshal result: %s", err)
+		log.Fatalf("failed to marshal result: %s", err)
 	}
 
-	err = rs.brokerClient.Publish(queueName, body)
+	err = rs.bc.Publish(queueName, body)
 	if err != nil {
-		log.Fatalf("Failed to publish message: %s", err)
+		log.Fatalf("failed to publish message: %s", err)
 	}
-	log.Printf("Message successfully published %s = %d\n", result.Key, result.Value)
 }
 
 func (rs *ResultService) PublishError(errMsg string, queueName string) {
@@ -43,11 +42,11 @@ func (rs *ResultService) PublishError(errMsg string, queueName string) {
 
 	body, err := proto.Marshal(&msg)
 	if err != nil {
-		log.Fatalf("Failed to marshal result: %s", err)
+		log.Fatalf("failed to marshal result: %s", err)
 	}
 
-	err = rs.brokerClient.Publish(queueName, body)
+	err = rs.bc.Publish(queueName, body)
 	if err != nil {
-		log.Fatalf("Failed to publish message: %s", err)
+		log.Fatalf("failed to publish message: %s", err)
 	}
 }

@@ -15,46 +15,35 @@ import (
 	"strconv"
 )
 
-type ServerAPI struct {
+type ExecutorServer struct {
 	executorpb.UnimplementedExecutorServer
 	uc *use_cases.UseCase
 }
 
-func Register(
-	gRPCServer *grpc.Server,
-	useCase *use_cases.UseCase) {
-	executorpb.RegisterExecutorServer(gRPCServer, &ServerAPI{uc: useCase})
+func Register(gs *grpc.Server, uc *use_cases.UseCase) {
+	executorpb.RegisterExecutorServer(gs, &ExecutorServer{uc: uc})
 }
 
-func (s *ServerAPI) Execute(
-	ctx context.Context,
-	in *executorpb.Request,
-) (*executorpb.Response, error) {
-
+func (es *ExecutorServer) Execute(ctx context.Context, in *executorpb.Request) (*executorpb.Response, error) {
 	gi := dto.GroupedInstructions{
 		Expressions: make([]executor.Expression, 0),
 		VarsToPrint: make(map[string]bool),
 	}
 
-	err := s.groupInstructions(in.GetInstructions(), &gi)
+	err := es.groupInstructions(in.GetInstructions(), &gi)
 	if err != nil {
-		return nil, s.gRPCErrMap(err)
+		return nil, es.mapExecutorErrToGRPCErr(err)
 	}
 
-	_, ok := ctx.Value(values.RequestIdKey).(string)
-	if !ok {
-		return nil, status.Error(codes.Internal, errors.New("request id is missing in context").Error())
-	}
-
-	results, err := s.uc.Execute(ctx, &gi)
+	results, err := es.uc.Execute(ctx, &gi)
 	if err != nil {
-		return nil, s.gRPCErrMap(err)
+		return nil, es.mapExecutorErrToGRPCErr(err)
 	}
 
-	return &executorpb.Response{Items: *s.resultsToItems(&results)}, nil
+	return &executorpb.Response{Items: *es.resultsToItems(&results)}, nil
 }
 
-func (s *ServerAPI) resultsToItems(results *[]executor.Result) *[]*executorpb.Item {
+func (es *ExecutorServer) resultsToItems(results *[]executor.Result) *[]*executorpb.Item {
 	items := make([]*executorpb.Item, len(*results))
 	for i, result := range *results {
 		items[i] = &executorpb.Item{
@@ -65,9 +54,13 @@ func (s *ServerAPI) resultsToItems(results *[]executor.Result) *[]*executorpb.It
 	return &items
 }
 
-func (s *ServerAPI) groupInstructions(instructions []*executorpb.Instruction, gi *dto.GroupedInstructions) error {
+func (es *ExecutorServer) groupInstructions(instructions []*executorpb.Instruction, gi *dto.GroupedInstructions) error {
 	for _, instruction := range instructions {
 		if instruction.Type == values.Calculate {
+			err := es.validateCalcInst(instruction)
+			if err != nil {
+				return err
+			}
 			expression := executor.Expression{
 				Type:      instruction.Type,
 				Operation: *instruction.Op,
@@ -87,28 +80,40 @@ func (s *ServerAPI) groupInstructions(instructions []*executorpb.Instruction, gi
 			} else {
 				expression.Left = left
 			}
+
+			gi.Expressions = append(gi.Expressions, expression)
 			continue
 
 		} else if instruction.Type == values.Print {
-			gi.VarsToPrint[instruction.Var] = false
+			gi.VarsToPrint[instruction.Var] = true
 			continue
 		}
-		return fmt.Errorf("%w: %v", executor.ErrUnknownInstructionType, instruction.Type)
+		return fmt.Errorf("%v (%v)", "unknown type of instruction", instruction.Type)
 	}
 	return nil
 }
 
-func (s *ServerAPI) gRPCErrMap(err error) error {
+func (es *ExecutorServer) validateCalcInst(instruction *executorpb.Instruction) error {
+	if instruction.Op == nil {
+		return errors.New("field 'op' is missing in calculate instruction")
+	}
+	if instruction.Left == nil {
+		return errors.New("field 'left' is missing in calculate instruction")
+	}
+	if instruction.Right == nil {
+		return errors.New("field 'right' is missing in calculate instruction")
+	}
+	return nil
+}
+
+func (es *ExecutorServer) mapExecutorErrToGRPCErr(err error) error {
 	switch {
 	case errors.Is(err, executor.ErrCyclicDependency) ||
-		errors.Is(err, executor.ErrUnknownInstructionType) ||
 		errors.Is(err, executor.ErrCalcExpression) ||
-		errors.Is(err, executor.ErrVarNeverBeCalc):
+		errors.Is(err, executor.ErrVarWillNeverBeCalc):
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, executor.ErrVarAlreadyUsed):
 		return status.Error(codes.AlreadyExists, err.Error())
-	case errors.Is(err, executor.ErrVarToPrintNotFound):
-		return status.Error(codes.NotFound, err.Error())
 	default:
 		return status.Error(codes.Internal, err.Error())
 	}

@@ -8,32 +8,32 @@ import (
 )
 
 type UseCase struct {
-	brokerService *services.ResultService
-	arithmService *services.ArithmService
+	rs *services.ResultService
+	as *services.ArithmeticService
 }
 
-func NewUseCase(bs *services.ResultService, as *services.ArithmService) *UseCase {
-	return &UseCase{brokerService: bs, arithmService: as}
+func NewUseCase(rs *services.ResultService, as *services.ArithmeticService) *UseCase {
+	return &UseCase{rs: rs, as: as}
 }
 
 func (uc *UseCase) Execute(expression arithmetic.Expression, queueName string) {
 	time.Sleep(arithmetic.WorkSimulationTime)
 
 	opToArithmFuncMap := map[string]func(left, right int64) int64{
-		"+": uc.arithmService.Sum,
-		"-": uc.arithmService.Sub,
-		"*": uc.arithmService.Multi,
+		"+": uc.as.Sum,
+		"-": uc.as.Sub,
+		"*": uc.as.Multi,
 	}
 
 	arithmFunc, ok := opToArithmFuncMap[expression.Op]
 	if !ok {
 		msg := fmt.Sprintf("operation '%s' is not supported", expression.Op)
-		uc.brokerService.PublishError(msg, queueName)
+		uc.rs.PublishError(msg, queueName)
 		return
 	}
 
 	result := arithmetic.Result{Key: expression.Variable}
 	result.Value = arithmFunc(expression.Left, expression.Right)
 
-	uc.brokerService.PublishResult(result, queueName)
+	uc.rs.PublishResult(result, queueName)
 }

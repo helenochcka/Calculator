@@ -23,7 +23,7 @@ func NewGinHandler(uc *use_cases.UseCase) *GinHandler {
 func (gh *GinHandler) Execute(gctx *gin.Context) {
 	var insts []Instruction
 	if err := gctx.ShouldBindJSON(&insts); err != nil {
-		gctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body, " + err.Error()})
+		gctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
@@ -34,13 +34,13 @@ func (gh *GinHandler) Execute(gctx *gin.Context) {
 
 	err := gh.groupInstructions(&insts, &gi)
 	if err != nil {
-		gh.mapExecutorErrToHTTPErr(err, gctx)
+		gctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 		return
 	}
 
 	reqId, exists := gctx.Get(values.RequestIdKey)
 	if !exists {
-		gctx.JSON(http.StatusInternalServerError, gin.H{"error": "request id is missing in the context"})
+		gctx.JSON(http.StatusInternalServerError, gin.H{"error": executor.ErrReqIdMissing.Error()})
 		return
 	}
 
@@ -70,6 +70,10 @@ func (gh *GinHandler) resultsToItems(results *[]executor.Result) *[]Item {
 func (gh *GinHandler) groupInstructions(instructions *[]Instruction, gi *dto.GroupedInstructions) error {
 	for _, instruction := range *instructions {
 		if instruction.Type == values.Calculate {
+			err := gh.validateCalcInst(&instruction)
+			if err != nil {
+				return err
+			}
 			expression := executor.Expression{
 				Type:      instruction.Type,
 				Operation: *instruction.Operation,
@@ -91,10 +95,23 @@ func (gh *GinHandler) groupInstructions(instructions *[]Instruction, gi *dto.Gro
 			gi.Expressions = append(gi.Expressions, expression)
 			continue
 		} else if instruction.Type == values.Print {
-			gi.VarsToPrint[instruction.Variable] = false
+			gi.VarsToPrint[instruction.Variable] = true
 			continue
 		}
-		return fmt.Errorf("%w: %v", executor.ErrUnknownInstructionType, instruction.Type)
+		return fmt.Errorf("%v (%v)", "unknown type of instruction", instruction.Type)
+	}
+	return nil
+}
+
+func (gh *GinHandler) validateCalcInst(instruction *Instruction) error {
+	if instruction.Operation == nil {
+		return errors.New("field 'op' is missing in calculate instruction")
+	}
+	if instruction.Left == nil {
+		return errors.New("field 'left' is missing in calculate instruction")
+	}
+	if instruction.Right == nil {
+		return errors.New("field 'right' is missing in calculate instruction")
 	}
 	return nil
 }
@@ -103,14 +120,10 @@ func (gh *GinHandler) mapExecutorErrToHTTPErr(err error, c *gin.Context) {
 	switch {
 	case errors.Is(err, executor.ErrCyclicDependency) ||
 		errors.Is(err, executor.ErrCalcExpression) ||
-		errors.Is(err, executor.ErrVarNeverBeCalc):
+		errors.Is(err, executor.ErrVarWillNeverBeCalc):
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	case errors.Is(err, executor.ErrVarAlreadyUsed):
 		c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
-	case errors.Is(err, executor.ErrVarToPrintNotFound):
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-	case errors.Is(err, executor.ErrUnknownInstructionType):
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 	default:
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
