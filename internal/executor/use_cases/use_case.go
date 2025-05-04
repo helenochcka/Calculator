@@ -2,6 +2,7 @@ package use_cases
 
 import (
 	"Calculator/internal/executor"
+	"Calculator/internal/executor/dto"
 	"Calculator/internal/executor/services"
 	"context"
 	"fmt"
@@ -15,7 +16,7 @@ func NewUseCase(s *services.CommService) *UseCase {
 	return &UseCase{service: s}
 }
 
-func (uc *UseCase) Execute(ctx context.Context, expressions *[]executor.Expression, varsToPrint map[string]bool) ([]executor.Result, error) {
+func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]executor.Result, error) {
 	expressionMap := make(map[string][]executor.Expression)
 	resultMap := make(map[string]int)
 	expressionVars := make(map[string]bool)
@@ -27,9 +28,9 @@ func (uc *UseCase) Execute(ctx context.Context, expressions *[]executor.Expressi
 		return nil, err
 	}
 
-	for _, expression := range *expressions {
-		if _, ok := varsToPrint[expression.Variable]; ok {
-			varsToPrint[expression.Variable] = true
+	for _, expression := range gi.Expressions {
+		if _, ok := gi.VarsToPrint[expression.Variable]; ok {
+			gi.VarsToPrint[expression.Variable] = true
 		}
 		if _, ok := expressionVars[expression.Variable]; ok {
 			return nil, fmt.Errorf("%w: %v", executor.ErrVarAlreadyUsed, expression.Variable)
@@ -70,7 +71,7 @@ func (uc *UseCase) Execute(ctx context.Context, expressions *[]executor.Expressi
 		}
 	}
 
-	for variable, varToPrint := range varsToPrint {
+	for variable, varToPrint := range gi.VarsToPrint {
 		if !varToPrint {
 			return nil, fmt.Errorf("%w: %v", executor.ErrVarToPrintNotFound, variable)
 		}
@@ -79,12 +80,12 @@ func (uc *UseCase) Execute(ctx context.Context, expressions *[]executor.Expressi
 	handlerFunc := func(result executor.Result) (stop bool, err error) {
 		resultMap[result.Key] = result.Value
 
-		if varsToPrint[result.Key] {
+		if gi.VarsToPrint[result.Key] {
 			prints = append(prints, result)
-			delete(varsToPrint, result.Key)
+			delete(gi.VarsToPrint, result.Key)
 		}
 
-		if len(varsToPrint) == 0 {
+		if len(gi.VarsToPrint) == 0 {
 			return true, nil
 		}
 

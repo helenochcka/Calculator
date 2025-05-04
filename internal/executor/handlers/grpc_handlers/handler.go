@@ -3,7 +3,9 @@ package grpc_handlers
 import (
 	"Calculator/api/executorpb"
 	"Calculator/internal/executor"
+	"Calculator/internal/executor/dto"
 	"Calculator/internal/executor/use_cases"
+	"Calculator/internal/executor/values"
 	"context"
 	"errors"
 	"fmt"
@@ -29,71 +31,71 @@ func (s *ServerAPI) Execute(
 	in *executorpb.Request,
 ) (*executorpb.Response, error) {
 
-	var expressions []executor.Expression
-	varsToPrint := make(map[string]bool)
-	for _, instruction := range in.GetInstructions() {
-		expression, err := s.distributeInstructions(instruction, varsToPrint)
-		if err != nil {
-			return nil, s.gRPCErrMap(err)
-		}
-		if expression != nil {
-			expressions = append(expressions, *expression)
-		}
+	gi := dto.GroupedInstructions{
+		Expressions: make([]executor.Expression, 0),
+		VarsToPrint: make(map[string]bool),
 	}
 
-	_, ok := ctx.Value("request_id").(string)
-	if !ok {
-		return nil, status.Error(codes.Internal, errors.New("request id is missing in context").Error())
-	}
-
-	items, err := s.uc.Execute(ctx, &expressions, varsToPrint)
+	err := s.groupInstructions(in.GetInstructions(), &gi)
 	if err != nil {
 		return nil, s.gRPCErrMap(err)
 	}
 
-	genItems := make([]*executorpb.Item, 0, len(items))
-	for _, item := range items {
-		genItem := executorpb.Item{
-			Var:   item.Key,
-			Value: int64(item.Value),
-		}
-		genItems = append(genItems, &genItem)
+	_, ok := ctx.Value(values.RequestIdKey).(string)
+	if !ok {
+		return nil, status.Error(codes.Internal, errors.New("request id is missing in context").Error())
 	}
 
-	return &executorpb.Response{Items: genItems}, nil
+	results, err := s.uc.Execute(ctx, &gi)
+	if err != nil {
+		return nil, s.gRPCErrMap(err)
+	}
+
+	return &executorpb.Response{Items: *s.resultsToItems(&results)}, nil
 }
 
-func (s *ServerAPI) distributeInstructions(
-	instruction *executorpb.Instruction,
-	varsToPrint map[string]bool) (*executor.Expression, error) {
-	if instruction.Type == "calc" {
-		expression := executor.Expression{
-			Type:      instruction.Type,
-			Operation: *instruction.Op,
-			Variable:  instruction.Var,
+func (s *ServerAPI) resultsToItems(results *[]executor.Result) *[]*executorpb.Item {
+	items := make([]*executorpb.Item, len(*results))
+	for i, result := range *results {
+		items[i] = &executorpb.Item{
+			Var:   result.Key,
+			Value: int64(result.Value),
 		}
-
-		right, err := strconv.Atoi(*instruction.Right)
-		if err != nil {
-			expression.Right = *instruction.Right
-		} else {
-			expression.Right = right
-		}
-
-		left, err := strconv.Atoi(*instruction.Left)
-		if err != nil {
-			expression.Left = *instruction.Left
-		} else {
-			expression.Left = left
-		}
-		return &expression, nil
-
-	} else if instruction.Type == "print" {
-		varsToPrint[instruction.Var] = false
-		return nil, nil
-	} else {
-		return nil, fmt.Errorf("%w: %v", executor.ErrUnknownInstructionType, instruction.Type)
 	}
+	return &items
+}
+
+func (s *ServerAPI) groupInstructions(instructions []*executorpb.Instruction, gi *dto.GroupedInstructions) error {
+	for _, instruction := range instructions {
+		if instruction.Type == values.Calculate {
+			expression := executor.Expression{
+				Type:      instruction.Type,
+				Operation: *instruction.Op,
+				Variable:  instruction.Var,
+			}
+
+			right, err := strconv.Atoi(*instruction.Right)
+			if err != nil {
+				expression.Right = *instruction.Right
+			} else {
+				expression.Right = right
+			}
+
+			left, err := strconv.Atoi(*instruction.Left)
+			if err != nil {
+				expression.Left = *instruction.Left
+			} else {
+				expression.Left = left
+			}
+			continue
+
+		} else if instruction.Type == values.Print {
+			gi.VarsToPrint[instruction.Var] = false
+			continue
+		}
+		return fmt.Errorf("%w: %v", executor.ErrUnknownInstructionType, instruction.Type)
+	}
+	return nil
 }
 
 func (s *ServerAPI) gRPCErrMap(err error) error {

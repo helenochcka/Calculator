@@ -47,7 +47,7 @@ func (gh *GinHandler) Execute(gctx *gin.Context) {
 	ctx := gctx.Request.Context()
 	ctx = context.WithValue(ctx, values.RequestIdKey, reqId)
 
-	results, err := gh.uc.Execute(ctx, &gi.Expressions, gi.VarsToPrint)
+	results, err := gh.uc.Execute(ctx, &gi)
 	if err != nil {
 		gh.mapExecutorErrToHTTPErr(err, gctx)
 		return
