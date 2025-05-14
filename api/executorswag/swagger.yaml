@@ -1,0 +1,89 @@
+definitions:
+  gin_handler.HTTPError:
+    properties:
+      code:
+        example: EXAMPLE_ERROR_CODE
+        type: string
+      message:
+        example: example error message
+        type: string
+    type: object
+  gin_handler.Instruction:
+    description: The instruction type can be either of the "calc" or "print". Type
+      "calc" defines which arithmetic operation(op) (multiplication, addition, subtraction)
+      to perform on two entities(left,right) and which variable(var) to save the result
+      to. The entity(left/right) can be either an int64 literal or a variable name.
+      Type "print" specifies the name of the variable(var) whose value needs to be
+      output. In this case, there is no need to be fill in the remaining fields(op,left,right).
+    properties:
+      left:
+        example: 2
+        type: integer
+      op:
+        example: +
+        type: string
+      right:
+        example: 2
+        type: integer
+      type:
+        example: calc
+        type: string
+      var:
+        example: x
+        type: string
+    required:
+    - type
+    - var
+    type: object
+  gin_handler.Item:
+    properties:
+      value:
+        example: 4
+        type: integer
+      var:
+        example: x
+        type: string
+    type: object
+info:
+  contact: {}
+  title: Calculator API
+  version: "1.0"
+paths:
+  /execute:
+    post:
+      description: |-
+        Calculate expressions and print results of requested instructions.
+        The result can only be written to the same variable once.
+      parameters:
+      - description: instructions to calculate
+        in: body
+        name: instructions
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/gin_handler.Instruction'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/gin_handler.Item'
+            type: array
+        "400":
+          description: 'possible error codes: INVALID_JSON_BODY, UNKNOWN_TYPE_OF_INSTRUCTION,
+            FIELD_MISSING_IN_CALC, CYCLIC_DEPENDENCY, ERR_CALC_EXPRESSION, VAR_WILL_NEVER_BE_CALC'
+          schema:
+            $ref: '#/definitions/gin_handler.HTTPError'
+        "409":
+          description: 'possible error codes: VAR_ALREADY_USED'
+          schema:
+            $ref: '#/definitions/gin_handler.HTTPError'
+        "500":
+          description: 'possible error codes: REQUEST_ID_MISSING, INTERNAL_SERVER_ERROR'
+          schema:
+            $ref: '#/definitions/gin_handler.HTTPError'
+      summary: Execute instructions
+swagger: "2.0"

@@ -1,4 +1,4 @@
-package gin_handlers
+package gin_handler
 
 import (
 	"Calculator/internal/executor/values"

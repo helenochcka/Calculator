@@ -4,8 +4,8 @@ type Expression struct {
 	Type      string
 	Operation string
 	Variable  string
-	Left      interface{}
-	Right     interface{}
+	Left      any
+	Right     any
 }
 
 type Result struct {

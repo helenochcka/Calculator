@@ -1,4 +1,4 @@
-package grpc_handlers
+package grpc_handler
 
 import (
 	"Calculator/api/executorpb"

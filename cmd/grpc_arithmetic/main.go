@@ -9,19 +9,20 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"net"
+	"time"
 )
 
 func main() {
 	cfg := config.LoadYamlConfig("config/config.yaml")
 
-	broker := factories.ProduceRabbitMQClient(cfg.RabbitMQBroker.URI, cfg.RabbitMQBroker.ContentType)
+	broker := factories.ProduceRabbitMQClient(cfg.RabbitMQBroker.URI, 2, 10*time.Second)
 	defer broker.Close()
 
 	resultService := services.NewResultService(broker)
 	arithmService := services.NewArithmeticService()
 	useCase := use_cases.NewUseCase(resultService, arithmService)
 
-	grpcListener, err := net.Listen("tcp", cfg.ArithmeticServer.Port)
+	grpcListener, err := net.Listen("tcp", cfg.ArithmeticServer.Address+":"+cfg.ArithmeticServer.Port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

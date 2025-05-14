@@ -9,13 +9,12 @@ import (
 )
 
 type Client struct {
-	conn        *amqp.Connection
-	ch          *amqp.Channel
-	contentType string
+	conn *amqp.Connection
+	ch   *amqp.Channel
 }
 
-func NewClient(conn *amqp.Connection, ch *amqp.Channel, contentType string) *Client {
-	return &Client{conn, ch, contentType}
+func NewClient(conn *amqp.Connection, ch *amqp.Channel) *Client {
+	return &Client{conn, ch}
 }
 
 func (b *Client) DeclareQueue(name string) error {
@@ -33,7 +32,7 @@ func (b *Client) Publish(queue string, body []byte) error {
 		false,
 		false,
 		amqp.Publishing{
-			ContentType: b.contentType,
+			ContentType: "application/x-protobuf",
 			Body:        body,
 		},
 	)

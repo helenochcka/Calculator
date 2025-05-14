@@ -2,17 +2,27 @@ package use_cases
 
 import (
 	"Calculator/internal/arithmetic"
-	"Calculator/internal/arithmetic/services"
 	"fmt"
 	"time"
 )
 
-type UseCase struct {
-	rs *services.ResultService
-	as *services.ArithmeticService
+type ArithmeticService interface {
+	Sum(a, b int64) int64
+	Multi(a, b int64) int64
+	Sub(a, b int64) int64
 }
 
-func NewUseCase(rs *services.ResultService, as *services.ArithmeticService) *UseCase {
+type ResultService interface {
+	PublishResult(result arithmetic.Result, queueName string)
+	PublishError(errMsg string, queueName string)
+}
+
+type UseCase struct {
+	rs ResultService
+	as ArithmeticService
+}
+
+func NewUseCase(rs ResultService, as ArithmeticService) *UseCase {
 	return &UseCase{rs: rs, as: as}
 }
 

@@ -1,0 +1,120 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Calculator API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/execute": {
+            "post": {
+                "description": "Calculate expressions and print results of requested instructions.\nThe result can only be written to the same variable once.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Execute instructions",
+                "parameters": [
+                    {
+                        "description": "instructions to calculate",
+                        "name": "instructions",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gin_handler.Instruction"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/gin_handler.Item"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "possible error codes: INVALID_JSON_BODY, UNKNOWN_TYPE_OF_INSTRUCTION, FIELD_MISSING_IN_CALC, CYCLIC_DEPENDENCY, ERR_CALC_EXPRESSION, VAR_WILL_NEVER_BE_CALC",
+                        "schema": {
+                            "$ref": "#/definitions/gin_handler.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "possible error codes: VAR_ALREADY_USED",
+                        "schema": {
+                            "$ref": "#/definitions/gin_handler.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "possible error codes: REQUEST_ID_MISSING, INTERNAL_SERVER_ERROR",
+                        "schema": {
+                            "$ref": "#/definitions/gin_handler.HTTPError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "gin_handler.HTTPError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "EXAMPLE_ERROR_CODE"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "example error message"
+                }
+            }
+        },
+        "gin_handler.Instruction": {
+            "description": "The instruction type can be either of the \"calc\" or \"print\". Type \"calc\" defines which arithmetic operation(op) (multiplication, addition, subtraction) to perform on two entities(left,right) and which variable(var) to save the result to. The entity(left/right) can be either an int64 literal or a variable name. Type \"print\" specifies the name of the variable(var) whose value needs to be output. In this case, there is no need to be fill in the remaining fields(op,left,right).",
+            "type": "object",
+            "required": [
+                "type",
+                "var"
+            ],
+            "properties": {
+                "left": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "op": {
+                    "type": "string",
+                    "example": "+"
+                },
+                "right": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "type": {
+                    "type": "string",
+                    "example": "calc"
+                },
+                "var": {
+                    "type": "string",
+                    "example": "x"
+                }
+            }
+        },
+        "gin_handler.Item": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "var": {
+                    "type": "string",
+                    "example": "x"
+                }
+            }
+        }
+    }
+}

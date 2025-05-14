@@ -7,12 +7,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
+	"time"
 )
 
-func ProduceArithmClient(address, port string) arithmeticpb.ArithmeticClient {
-	conn, err := grpc.NewClient(address+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func ProduceArithmClient(host, port string) arithmeticpb.ArithmeticClient {
+	conn, err := grpc.NewClient(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("failed to create grpc connection: %v", err)
+		log.Fatalf("failed to create grpc_handler connection: %v", err)
 	}
 
 	conn.Connect()
@@ -20,8 +21,19 @@ func ProduceArithmClient(address, port string) arithmeticpb.ArithmeticClient {
 	return arithmeticpb.NewArithmeticClient(conn)
 }
 
-func ProduceRabbitMQClient(uri, ct string) *rabbitmq.Client {
-	conn, err := amqp.Dial(uri)
+func ProduceRabbitMQClient(uri string, maxRetries int, delay time.Duration) *rabbitmq.Client {
+	var conn *amqp.Connection
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		conn, err = amqp.Dial(uri)
+		if err == nil {
+			break
+		}
+		log.Printf("RabbitMQ not ready yet, retrying in %s... (%d/%d)", delay, i+1, maxRetries)
+		time.Sleep(delay)
+	}
+
 	if err != nil {
 		log.Fatalf("failed to connect to RabbitMQ broker: %v", err)
 	}
@@ -32,5 +44,5 @@ func ProduceRabbitMQClient(uri, ct string) *rabbitmq.Client {
 		log.Fatalf("failed to open AMQP channel: %v", err)
 	}
 
-	return rabbitmq.NewClient(conn, ch, ct)
+	return rabbitmq.NewClient(conn, ch)
 }
