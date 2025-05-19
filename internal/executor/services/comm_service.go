@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc"
 )
 
 type BrokerClient interface {
@@ -17,16 +18,20 @@ type BrokerClient interface {
 	Close() error
 }
 
+type ArithmeticClient interface {
+	Calculate(ctx context.Context, req *arithmeticpb.CalculationData, opts ...grpc.CallOption) (*arithmeticpb.Message, error)
+}
+
 type CommunicationService struct {
-	ac arithmeticpb.ArithmeticClient
+	ac ArithmeticClient
 	bc BrokerClient
 }
 
-func NewCommService(ac arithmeticpb.ArithmeticClient, bc BrokerClient) *CommunicationService {
+func NewCommService(ac ArithmeticClient, bc BrokerClient) *CommunicationService {
 	return &CommunicationService{ac: ac, bc: bc}
 }
 
-func (cs *CommunicationService) RequestCalculation(cd *dto.CalculationData) error {
+func (cs *CommunicationService) RequestCalculation(cd *dto.CalculationData) {
 	req := arithmeticpb.CalculationData{
 		Var:       cd.Variable,
 		Op:        cd.Operation,
@@ -35,11 +40,7 @@ func (cs *CommunicationService) RequestCalculation(cd *dto.CalculationData) erro
 		QueueName: cd.QueueName,
 	}
 
-	_, err := cs.ac.Calculate(context.Background(), &req)
-	if err != nil {
-		return executor.ErrRequestCalc
-	}
-	return nil
+	_, _ = cs.ac.Calculate(context.Background(), &req)
 }
 
 func (cs *CommunicationService) DeclareResultsQueue(queueName string) error {

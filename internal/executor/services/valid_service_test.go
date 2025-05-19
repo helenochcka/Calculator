@@ -2,13 +2,12 @@ package services
 
 import (
 	"Calculator/internal/executor"
-	"Calculator/internal/executor/services"
 	"errors"
 	"testing"
 )
 
 func TestValidateService(t *testing.T) {
-	vs := services.NewValidationService()
+	vs := NewValidationService()
 
 	tests1 := []struct {
 		name string

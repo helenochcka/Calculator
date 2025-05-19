@@ -7,14 +7,20 @@ import (
 	"context"
 )
 
+type CommunicationService interface {
+	RequestCalculation(cd *dto.CalculationData)
+	DeclareResultsQueue(queueName string) error
+	ConsumeResults(queue string, rp executor.ResultProcessor) error
+}
+
 type UseCase struct {
-	cs *services.CommunicationService
+	cs CommunicationService
 	vs *services.ValidationService
 	gs *services.GetterService
 }
 
 func NewUseCase(
-	cs *services.CommunicationService,
+	cs CommunicationService,
 	vs *services.ValidationService,
 	gs *services.GetterService,
 ) *UseCase {
@@ -58,9 +64,7 @@ func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]
 				Right:     right,
 				QueueName: *reqId,
 			}
-			if err = uc.cs.RequestCalculation(&cd); err != nil {
-				return nil, err
-			}
+			uc.cs.RequestCalculation(&cd)
 			continue
 		}
 
@@ -91,7 +95,7 @@ func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]
 	resultsToPrint := make([]executor.Result, 0, len(gi.VarsToPrint))
 	resultMap := make(map[string]int, len(expressionVars))
 
-	resultProcessor := func(result executor.Result) (stop bool, err error) {
+	resultProcessor := func(result executor.Result) (stop bool) {
 		resultMap[result.Key] = result.Value
 
 		if gi.VarsToPrint[result.Key] {
@@ -100,7 +104,7 @@ func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]
 		}
 
 		if len(gi.VarsToPrint) == 0 {
-			return true, nil
+			return true
 		}
 
 		if dependencyMap[result.Key] != nil {
@@ -122,14 +126,12 @@ func (uc *UseCase) Execute(ctx context.Context, gi *dto.GroupedInstructions) ([]
 					Right:     *right,
 					QueueName: *reqId,
 				}
-				if err = uc.cs.RequestCalculation(&cd); err != nil {
-					return true, err
-				}
+				uc.cs.RequestCalculation(&cd)
 			}
 			delete(dependencyMap, result.Key)
 		}
 
-		return false, nil
+		return false
 	}
 
 	err = uc.cs.ConsumeResults(*reqId, resultProcessor)

@@ -1,3 +1,3 @@
 package executor
 
-type ResultProcessor func(result Result) (bool, error)
+type ResultProcessor func(result Result) bool

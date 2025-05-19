@@ -56,10 +56,7 @@ func (b *Client) Consume(queue string, rp executor.ResultProcessor) error {
 			return fmt.Errorf("%w%v", ErrCalculatingResult, *pbResult.ErrMsg)
 		}
 		result := executor.Result{Key: *pbResult.Key, Value: int(*pbResult.Value)}
-		stop, err := rp(result)
-		if err != nil {
-			return err
-		}
+		stop := rp(result)
 		if stop {
 			b.ch.Cancel("", false)
 			break

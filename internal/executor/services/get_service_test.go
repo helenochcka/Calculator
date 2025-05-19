@@ -2,7 +2,6 @@ package services
 
 import (
 	"Calculator/internal/executor"
-	"Calculator/internal/executor/services"
 	"Calculator/internal/executor/values"
 	"context"
 	"errors"
@@ -10,7 +9,7 @@ import (
 )
 
 func TestGetterService(t *testing.T) {
-	gs := services.NewGetterService()
+	gs := NewGetterService()
 
 	tests1 := []struct {
 		name        string
@@ -53,6 +52,10 @@ func TestGetterService(t *testing.T) {
 		{"value for x does not exist", "x", map[string]int{}, nil, false},
 		{"value for x exist", "x", map[string]int{"x": 1}, ptrInt(1), true},
 		{"value for 1", 1, map[string]int{}, ptrInt(1), true},
+		{"nil for custom struct", struct {
+			int    int
+			string string
+		}{0, ""}, map[string]int{}, nil, false},
 	}
 	for _, tt := range tests2 {
 		t.Run(tt.name, func(t *testing.T) {
